@@ -5,11 +5,9 @@ use tokio::net::TcpListener;
 use visdom_harness::llm::anthropic::AnthropicLlmClient;
 use visdom_harness::{AppState, db};
 
-async fn spawn_live_app() -> SocketAddr {
-    dotenvy::dotenv().ok();
-
+async fn spawn_live_app(model: &str) -> SocketAddr {
     let pool = db::in_memory_pool().await.unwrap();
-    let llm = AnthropicLlmClient::from_env().expect("ANTHROPIC_API_KEY must be set");
+    let llm = AnthropicLlmClient::from_env(model).expect("ANTHROPIC_API_KEY must be set");
     let state = AppState { pool, llm };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -27,12 +25,15 @@ async fn spawn_live_app() -> SocketAddr {
 #[tokio::test]
 #[ignore]
 async fn live_anthropic_round_trip() {
+    dotenvy::dotenv().ok();
+
     if std::env::var("ANTHROPIC_API_KEY").is_err() {
         eprintln!("skipping: ANTHROPIC_API_KEY not set");
         return;
     }
 
-    let addr = spawn_live_app().await;
+    let model = std::env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| "claude-sonnet-4-6".to_string());
+    let addr = spawn_live_app(&model).await;
     let client = reqwest::Client::new();
 
     // POST /debug/infer with a prompt that should elicit a tool call

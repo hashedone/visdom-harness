@@ -1,7 +1,7 @@
 use rig::completion::{AssistantContent, CompletionModel, ToolDefinition};
 use rig::message::{Message, UserContent};
 use rig::one_or_many::OneOrMany;
-use rig::providers::anthropic::{ClientBuilder, completion::CLAUDE_3_7_SONNET};
+use rig::providers::anthropic::ClientBuilder;
 
 use crate::error::AppError;
 
@@ -21,11 +21,11 @@ impl std::fmt::Debug for AnthropicLlmClient {
 }
 
 impl AnthropicLlmClient {
-    pub fn from_env() -> Result<Self, AppError> {
+    pub fn from_env(model: &str) -> Result<Self, AppError> {
         let api_key = std::env::var("ANTHROPIC_API_KEY").map_err(|_| AppError::MissingApiKey)?;
         let client = ClientBuilder::new(&api_key).build();
         Ok(Self {
-            model: client.completion_model(CLAUDE_3_7_SONNET),
+            model: client.completion_model(model),
         })
     }
 }
@@ -117,7 +117,7 @@ mod tests {
         unsafe {
             std::env::remove_var("ANTHROPIC_API_KEY");
         }
-        let result = AnthropicLlmClient::from_env();
+        let result = AnthropicLlmClient::from_env("claude-sonnet-4-6");
         assert!(
             matches!(result, Err(AppError::MissingApiKey)),
             "expected MissingApiKey error, got: {:?}",

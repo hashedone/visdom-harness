@@ -12,14 +12,14 @@ use visdom_harness::telemetry;
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let cfg = Config::from_env()?;
+    let cfg = Config::load()?;
 
-    telemetry::init(&cfg.rust_log)?;
+    telemetry::init(&cfg.log_filter)?;
 
     let pool = db::connect_and_migrate(&cfg.database_url).await?;
     info!(database_url = %cfg.database_url, "database ready");
 
-    let llm = AnthropicLlmClient::from_env().map_err(|e| eyre::eyre!("{}", e))?;
+    let llm = AnthropicLlmClient::from_env(&cfg.anthropic_model).map_err(|e| eyre::eyre!("{}", e))?;
 
     let state = AppState { pool, llm };
     let app = visdom_harness::build_app(state);
