@@ -1,17 +1,14 @@
 use std::net::SocketAddr;
 
 use serde_json::json;
-use tempfile::NamedTempFile;
 use tokio::net::TcpListener;
 use visdom_harness::llm::anthropic::AnthropicLlmClient;
 use visdom_harness::{AppState, db};
 
 async fn spawn_live_app() -> SocketAddr {
-    let db_file = NamedTempFile::new().unwrap();
-    let db_url = format!("sqlite://{}?mode=rwc", db_file.path().display());
-    let pool = db::connect_and_migrate(&db_url).await.unwrap();
-    std::mem::forget(db_file);
+    dotenvy::dotenv().ok();
 
+    let pool = db::in_memory_pool().await.unwrap();
     let llm = AnthropicLlmClient::from_env().expect("ANTHROPIC_API_KEY must be set");
     let state = AppState { pool, llm };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
