@@ -1,0 +1,17 @@
+use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
+use tracing::info;
+
+use crate::error::AppError;
+
+pub async fn connect_and_migrate(database_url: &str) -> Result<SqlitePool, AppError> {
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect(database_url)
+        .await?;
+
+    sqlx::migrate!("./migrations").run(&pool).await?;
+
+    info!(database_url = database_url, "database migrations complete");
+
+    Ok(pool)
+}

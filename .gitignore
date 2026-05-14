@@ -1,0 +1,18 @@
+# GSD tooling
+.gsd
+.gsd-id
+.mcp.json
+.bg-shell/
+
+# Rust build artifacts
+target/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local database (created at runtime)
+*.db
+*.db-shm
+*.db-wal
