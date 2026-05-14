@@ -1,6 +1,7 @@
 pub mod db;
 pub mod error;
 pub mod http;
+pub mod llm;
 pub mod telemetry;
 
 use axum::Router;
