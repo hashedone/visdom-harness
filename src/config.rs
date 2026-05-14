@@ -1,10 +1,21 @@
-use anyhow::{Context, Result};
 use std::env;
+use std::net::SocketAddr;
+
+use eyre::Result;
+use eyre::WrapErr;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+#[error("BIND_ADDR `{addr}` is not a valid socket address")]
+pub struct InvalidBindAddr {
+    addr: String,
+    #[source]
+    source: std::net::AddrParseError,
+}
 
 #[derive(Debug, Clone)]
 pub struct Config {
     pub bind_addr: String,
-    #[allow(dead_code)]
     pub database_url: String,
     pub rust_log: String,
 }
@@ -17,10 +28,13 @@ impl Config {
         let rust_log =
             env::var("RUST_LOG").unwrap_or_else(|_| "info,visdom_harness=debug".to_string());
 
-        // Validate bind_addr parses as a socket address
         bind_addr
-            .parse::<std::net::SocketAddr>()
-            .with_context(|| format!("BIND_ADDR is not a valid socket address: {bind_addr}"))?;
+            .parse::<SocketAddr>()
+            .map_err(|source| InvalidBindAddr {
+                addr: bind_addr.clone(),
+                source,
+            })
+            .wrap_err("invalid configuration")?;
 
         Ok(Self {
             bind_addr,

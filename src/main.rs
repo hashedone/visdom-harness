@@ -1,12 +1,16 @@
 mod config;
 
-use anyhow::Result;
 use config::Config;
+use eyre::Result;
 use tracing::info;
-use visdom_harness::{db, telemetry, AppState};
+use visdom_harness::AppState;
+use visdom_harness::db;
+use visdom_harness::telemetry;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    color_eyre::install()?;
+
     let cfg = Config::from_env()?;
 
     telemetry::init(&cfg.rust_log)?;

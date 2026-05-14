@@ -1,8 +1,7 @@
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
+use axum::Json;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::response::Response;
 use serde_json::json;
 use thiserror::Error;
 
@@ -18,7 +17,7 @@ pub enum AppError {
     Migration(#[from] sqlx::migrate::MigrateError),
 
     #[error("internal error: {0}")]
-    Internal(#[from] anyhow::Error),
+    Internal(#[from] eyre::Report),
 }
 
 impl IntoResponse for AppError {
