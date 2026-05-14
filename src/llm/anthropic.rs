@@ -73,6 +73,7 @@ impl LlmClient for AnthropicLlmClient {
             .preamble(system_prompt.to_string())
             .messages(history)
             .tools(tool_defs)
+            .max_tokens(4096)
             .build();
 
         let response = self.model.completion(request).await?;

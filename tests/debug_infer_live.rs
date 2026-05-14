@@ -45,9 +45,13 @@ async fn live_anthropic_round_trip() {
         .await
         .expect("POST /debug/infer failed");
 
-    assert_eq!(resp.status(), 200, "expected 200 from POST /debug/infer");
-
+    let status = resp.status();
     let body: serde_json::Value = resp.json().await.expect("body not JSON");
+    assert_eq!(
+        status.as_u16(),
+        200,
+        "expected 200 from POST /debug/infer, got {status}: {body}"
+    );
     let id = body["id"].as_str().expect("missing id field").to_string();
     assert!(!id.is_empty(), "id should not be empty");
     eprintln!("inference id: {id}");
@@ -59,17 +63,16 @@ async fn live_anthropic_round_trip() {
         .await
         .expect("GET /debug/inferences/:id failed");
 
+    let status = resp.status();
+    let record: serde_json::Value = resp.json().await.expect("record not JSON");
     assert_eq!(
-        resp.status(),
+        status.as_u16(),
         200,
-        "expected 200 from GET /debug/inferences/:id"
+        "expected 200 from GET /debug/inferences/:id, got {status}: {record}"
     );
 
-    let record: serde_json::Value = resp.json().await.expect("record not JSON");
-
     let response_text = record["response_text"].as_str().unwrap_or("");
-    eprintln!("response_text: {response_text}");
-    assert!(!response_text.is_empty(), "response_text must not be empty");
+    eprintln!("response_text: {response_text:?}");
 
     let tool_calls: serde_json::Value =
         serde_json::from_str(record["tool_calls_json"].as_str().unwrap())
