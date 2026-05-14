@@ -2,6 +2,7 @@ use axum::Json;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
+use rig::completion::CompletionError;
 use serde_json::json;
 use thiserror::Error;
 
@@ -20,7 +21,10 @@ pub enum AppError {
     Internal(#[from] eyre::Report),
 
     #[error("llm error: {0}")]
-    Llm(String),
+    Llm(#[from] CompletionError),
+
+    #[error("llm api key not configured")]
+    MissingApiKey,
 
     #[error("prompt must not be empty")]
     EmptyPrompt,
@@ -31,6 +35,7 @@ impl IntoResponse for AppError {
         let (status, message) = match &self {
             AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
             AppError::Llm(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            AppError::MissingApiKey => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             AppError::EmptyPrompt => (StatusCode::BAD_REQUEST, self.to_string()),
             AppError::Db(_) | AppError::Migration(_) | AppError::Internal(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())

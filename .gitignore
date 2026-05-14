@@ -16,5 +16,3 @@ target/
 *.db
 *.db-shm
 *.db-wal
-
-skills-lock.json

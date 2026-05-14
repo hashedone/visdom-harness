@@ -22,8 +22,7 @@ impl std::fmt::Debug for AnthropicLlmClient {
 
 impl AnthropicLlmClient {
     pub fn from_env() -> Result<Self, AppError> {
-        let api_key = std::env::var("ANTHROPIC_API_KEY")
-            .map_err(|_| AppError::Llm("ANTHROPIC_API_KEY not set".to_string()))?;
+        let api_key = std::env::var("ANTHROPIC_API_KEY").map_err(|_| AppError::MissingApiKey)?;
         let client = ClientBuilder::new(&api_key).build();
         Ok(Self {
             model: client.completion_model(CLAUDE_3_7_SONNET),
@@ -76,33 +75,23 @@ impl LlmClient for AnthropicLlmClient {
             .tools(tool_defs)
             .build();
 
-        let response = self
-            .model
-            .completion(request)
-            .await
-            .map_err(|e| AppError::Llm(e.to_string()))?;
+        let response = self.model.completion(request).await?;
 
-        let mut response_text = String::new();
-        let mut tool_calls = Vec::new();
-
-        for item in response.choice.iter() {
+        let (mut tool_calls, mut texts) = (Vec::new(), Vec::new());
+        for item in response.choice.into_iter() {
             match item {
-                AssistantContent::Text(t) => {
-                    response_text = t.text.clone();
-                }
-                AssistantContent::ToolCall(tc) => {
-                    tool_calls.push(ToolCallRecord {
-                        id: tc.id.clone(),
-                        name: tc.function.name.clone(),
-                        arguments: tc.function.arguments.clone(),
-                    });
-                }
+                AssistantContent::ToolCall(tc) => tool_calls.push(ToolCallRecord {
+                    id: tc.id,
+                    name: tc.function.name,
+                    arguments: tc.function.arguments,
+                }),
+                AssistantContent::Text(t) => texts.push(t.text),
             }
         }
 
         Ok(InferenceResult {
             prompt_text,
-            response_text,
+            response_text: texts.into_iter().next().unwrap_or_default(),
             tool_calls,
         })
     }
@@ -126,8 +115,8 @@ mod tests {
         }
         let result = AnthropicLlmClient::from_env();
         assert!(
-            matches!(result, Err(AppError::Llm(ref msg)) if msg.contains("ANTHROPIC_API_KEY")),
-            "expected Llm error about ANTHROPIC_API_KEY, got: {:?}",
+            matches!(result, Err(AppError::MissingApiKey)),
+            "expected MissingApiKey error, got: {:?}",
             result
         );
     }

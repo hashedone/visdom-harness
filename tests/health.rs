@@ -15,7 +15,7 @@ impl LlmClient for NoopLlmClient {
         _messages: &[InferenceMessage],
         _tools: &[ToolSpec],
     ) -> Result<InferenceResult, AppError> {
-        Err(AppError::Llm("noop".to_string()))
+        Err(AppError::MissingApiKey)
     }
 }
 
