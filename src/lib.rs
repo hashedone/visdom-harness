@@ -1,16 +1,21 @@
 pub mod db;
 pub mod error;
 pub mod http;
+pub mod inferences;
+pub mod llm;
 pub mod telemetry;
 
 use axum::Router;
 use sqlx::SqlitePool;
 
+use crate::llm::LlmClient;
+
 #[derive(Clone)]
-pub struct AppState {
+pub struct AppState<L: LlmClient> {
     pub pool: SqlitePool,
+    pub llm: L,
 }
 
-pub fn build_app(state: AppState) -> Router {
+pub fn build_app<L: LlmClient>(state: AppState<L>) -> Router {
     http::router(state)
 }

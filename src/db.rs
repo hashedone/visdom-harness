@@ -15,3 +15,14 @@ pub async fn connect_and_migrate(database_url: &str) -> Result<SqlitePool, AppEr
 
     Ok(pool)
 }
+
+pub async fn in_memory_pool() -> Result<SqlitePool, AppError> {
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await?;
+
+    sqlx::migrate!("./migrations").run(&pool).await?;
+
+    Ok(pool)
+}
