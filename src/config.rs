@@ -4,6 +4,7 @@ use std::env;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub bind_addr: String,
+    #[allow(dead_code)]
     pub database_url: String,
     pub rust_log: String,
 }

@@ -4,10 +4,10 @@ use anyhow::Result;
 use config::Config;
 use tracing::info;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cfg = Config::from_env()?;
 
-    // Initialize tracing before any other logging
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -16,10 +16,12 @@ fn main() -> Result<()> {
         .json()
         .init();
 
-    info!(bind_addr = %cfg.bind_addr, database_url = %cfg.database_url, "visdom-harness config loaded");
+    let app = visdom_harness::build_app();
 
-    // Real wiring (Axum, sqlx pool, OTel init) lands in T02–T04
-    info!("startup complete (skeleton — HTTP server wired in T02)");
+    let listener = tokio::net::TcpListener::bind(&cfg.bind_addr).await?;
+    info!(bind_addr = %listener.local_addr()?, "visdom-harness listening");
+
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
