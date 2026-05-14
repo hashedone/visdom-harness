@@ -1,5 +1,4 @@
 use std::net::SocketAddr;
-use std::sync::Arc;
 
 use serde_json::json;
 use tempfile::NamedTempFile;
@@ -14,10 +13,7 @@ async fn spawn_live_app() -> SocketAddr {
     std::mem::forget(db_file);
 
     let llm = AnthropicLlmClient::from_env().expect("ANTHROPIC_API_KEY must be set");
-    let state = AppState {
-        pool,
-        llm: Arc::new(llm),
-    };
+    let state = AppState { pool, llm };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let app = visdom_harness::build_app(state);

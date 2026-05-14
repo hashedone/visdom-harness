@@ -1,7 +1,6 @@
+use std::future::Future;
 use std::net::SocketAddr;
-use std::sync::Arc;
 
-use async_trait::async_trait;
 use serde_json::json;
 use tempfile::NamedTempFile;
 use tokio::net::TcpListener;
@@ -9,29 +8,31 @@ use visdom_harness::error::AppError;
 use visdom_harness::llm::{InferenceMessage, InferenceResult, LlmClient, ToolCallRecord, ToolSpec};
 use visdom_harness::{AppState, db};
 
+#[derive(Clone)]
 struct MockLlmClient;
 
-#[async_trait]
 impl LlmClient for MockLlmClient {
-    async fn infer(
+    fn infer(
         &self,
         _system_prompt: &str,
         messages: &[InferenceMessage],
         _tools: &[ToolSpec],
-    ) -> Result<InferenceResult, AppError> {
+    ) -> impl Future<Output = Result<InferenceResult, AppError>> + Send {
         let prompt_text = messages
             .last()
             .map(|m| m.content.clone())
             .unwrap_or_default();
-        Ok(InferenceResult {
-            prompt_text,
-            response_text: String::new(),
-            tool_calls: vec![ToolCallRecord {
-                id: "tc-001".to_string(),
-                name: "get_weather".to_string(),
-                arguments: json!({ "city": "London" }),
-            }],
-        })
+        async move {
+            Ok(InferenceResult {
+                prompt_text,
+                response_text: String::new(),
+                tool_calls: vec![ToolCallRecord {
+                    id: "tc-001".to_string(),
+                    name: "get_weather".to_string(),
+                    arguments: json!({ "city": "London" }),
+                }],
+            })
+        }
     }
 }
 
@@ -43,7 +44,7 @@ async fn spawn_app() -> SocketAddr {
 
     let state = AppState {
         pool,
-        llm: Arc::new(MockLlmClient),
+        llm: MockLlmClient,
     };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();

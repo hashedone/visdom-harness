@@ -1,7 +1,5 @@
 mod config;
 
-use std::sync::Arc;
-
 use config::Config;
 use eyre::Result;
 use tracing::info;
@@ -22,7 +20,6 @@ async fn main() -> Result<()> {
     info!(database_url = %cfg.database_url, "database ready");
 
     let llm = AnthropicLlmClient::from_env().map_err(|e| eyre::eyre!("{}", e))?;
-    let llm = Arc::new(llm);
 
     let state = AppState { pool, llm };
     let app = visdom_harness::build_app(state);

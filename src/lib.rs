@@ -5,19 +5,17 @@ pub mod inferences;
 pub mod llm;
 pub mod telemetry;
 
-use std::sync::Arc;
-
 use axum::Router;
 use sqlx::SqlitePool;
 
 use crate::llm::LlmClient;
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct AppState<L: LlmClient> {
     pub pool: SqlitePool,
-    pub llm: Arc<dyn LlmClient + Send + Sync>,
+    pub llm: L,
 }
 
-pub fn build_app(state: AppState) -> Router {
+pub fn build_app<L: LlmClient>(state: AppState<L>) -> Router {
     http::router(state)
 }

@@ -1,24 +1,23 @@
+use std::future::Future;
 use std::net::SocketAddr;
-use std::sync::Arc;
 
-use async_trait::async_trait;
 use tempfile::NamedTempFile;
 use tokio::net::TcpListener;
 use visdom_harness::error::AppError;
 use visdom_harness::llm::{InferenceMessage, InferenceResult, LlmClient, ToolSpec};
 use visdom_harness::{AppState, db};
 
+#[derive(Clone)]
 struct NoopLlmClient;
 
-#[async_trait]
 impl LlmClient for NoopLlmClient {
-    async fn infer(
+    fn infer(
         &self,
         _system_prompt: &str,
         _messages: &[InferenceMessage],
         _tools: &[ToolSpec],
-    ) -> Result<InferenceResult, AppError> {
-        Err(AppError::Llm("noop".to_string()))
+    ) -> impl Future<Output = Result<InferenceResult, AppError>> + Send {
+        async { Err(AppError::Llm("noop".to_string())) }
     }
 }
 
@@ -31,7 +30,7 @@ async fn spawn_app() -> SocketAddr {
 
     let state = AppState {
         pool,
-        llm: Arc::new(NoopLlmClient),
+        llm: NoopLlmClient,
     };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();

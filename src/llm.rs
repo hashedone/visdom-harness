@@ -37,12 +37,13 @@ pub struct InferenceResult {
     pub tool_calls: Vec<ToolCallRecord>,
 }
 
-#[async_trait::async_trait]
-pub trait LlmClient: Send + Sync {
-    async fn infer(
+pub trait LlmClient: Clone + Send + Sync + 'static {
+    fn infer(
         &self,
         system_prompt: &str,
         messages: &[InferenceMessage],
         tools: &[ToolSpec],
-    ) -> Result<InferenceResult, AppError>;
+    ) -> impl Future<Output = Result<InferenceResult, AppError>> + Send;
 }
+
+use std::future::Future;

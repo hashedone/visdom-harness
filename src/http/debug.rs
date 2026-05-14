@@ -7,7 +7,7 @@ use tracing::instrument;
 use crate::AppState;
 use crate::error::AppError;
 use crate::inferences::{self, InferenceRecord};
-use crate::llm::{InferenceMessage, MessageRole, ToolSpec};
+use crate::llm::{InferenceMessage, LlmClient, MessageRole, ToolSpec};
 
 #[derive(Debug, Deserialize)]
 pub struct InferRequest {
@@ -20,8 +20,8 @@ pub struct InferResponse {
 }
 
 #[instrument(skip(state), fields(prompt_chars))]
-pub async fn post_infer(
-    State(state): State<AppState>,
+pub async fn post_infer<L: LlmClient>(
+    State(state): State<AppState<L>>,
     Json(body): Json<InferRequest>,
 ) -> Result<Json<InferResponse>, AppError> {
     if body.prompt.is_empty() {
@@ -57,8 +57,8 @@ pub async fn post_infer(
     Ok(Json(InferResponse { id: record.id }))
 }
 
-pub async fn get_inference(
-    State(state): State<AppState>,
+pub async fn get_inference<L: LlmClient>(
+    State(state): State<AppState<L>>,
     Path(id): Path<String>,
 ) -> Result<Json<InferenceRecord>, AppError> {
     let record = inferences::get(&state.pool, &id)
@@ -67,8 +67,8 @@ pub async fn get_inference(
     Ok(Json(record))
 }
 
-pub async fn list_inferences(
-    State(state): State<AppState>,
+pub async fn list_inferences<L: LlmClient>(
+    State(state): State<AppState<L>>,
 ) -> Result<Json<Vec<InferenceRecord>>, AppError> {
     let records = inferences::list(&state.pool, 100).await?;
     Ok(Json(records))
