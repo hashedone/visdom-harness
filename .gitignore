@@ -16,3 +16,26 @@ target/
 *.db
 *.db-shm
 *.db-wal
+
+# ── GSD baseline (auto-generated) ──
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+node_modules/
+.next/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+vendor/
+*.log
+coverage/
+.cache/
+tmp/
