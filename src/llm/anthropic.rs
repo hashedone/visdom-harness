@@ -77,17 +77,21 @@ impl LlmClient for AnthropicLlmClient {
 
         let response = self.model.completion(request).await?;
 
-        let (mut tool_calls, mut texts) = (Vec::new(), Vec::new());
-        for item in response.choice.into_iter() {
-            match item {
-                AssistantContent::ToolCall(tc) => tool_calls.push(ToolCallRecord {
-                    id: tc.id,
-                    name: tc.function.name,
-                    arguments: tc.function.arguments,
-                }),
-                AssistantContent::Text(t) => texts.push(t.text),
-            }
-        }
+        let (tool_calls, texts): (Vec<ToolCallRecord>, Vec<String>) =
+            response.choice.into_iter().fold(
+                (Vec::new(), Vec::new()),
+                |(mut tool_calls, mut texts), item| {
+                    match item {
+                        AssistantContent::ToolCall(tc) => tool_calls.push(ToolCallRecord {
+                            id: tc.id,
+                            name: tc.function.name,
+                            arguments: tc.function.arguments,
+                        }),
+                        AssistantContent::Text(t) => texts.push(t.text),
+                    }
+                    (tool_calls, texts)
+                },
+            );
 
         Ok(InferenceResult {
             prompt_text,
