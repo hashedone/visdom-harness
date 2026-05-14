@@ -2,6 +2,10 @@ pub mod health;
 
 use axum::{routing::get, Router};
 
-pub fn router() -> Router {
-    Router::new().route("/health", get(health::health))
+use crate::AppState;
+
+pub fn router(state: AppState) -> Router {
+    Router::new()
+        .route("/health", get(health::health))
+        .with_state(state)
 }
