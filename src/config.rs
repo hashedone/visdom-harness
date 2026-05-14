@@ -9,8 +9,6 @@ use thiserror::Error;
 #[error("BIND_ADDR `{addr}` is not a valid socket address")]
 pub struct InvalidBindAddr {
     addr: String,
-    #[source]
-    source: std::net::AddrParseError,
 }
 
 #[derive(Debug, Clone)]
@@ -30,11 +28,10 @@ impl Config {
 
         bind_addr
             .parse::<SocketAddr>()
-            .map_err(|source| InvalidBindAddr {
+            .map_err(eyre::Report::from)
+            .with_context(|| InvalidBindAddr {
                 addr: bind_addr.clone(),
-                source,
-            })
-            .wrap_err("invalid configuration")?;
+            })?;
 
         Ok(Self {
             bind_addr,
