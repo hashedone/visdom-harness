@@ -30,20 +30,14 @@ pub async fn record(
     let tool_calls_json = serde_json::to_string(&result.tool_calls)
         .map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
 
-    let row = sqlx::query_as::<_, InferenceRecord>(
-        r#"
-        INSERT INTO inferences (id, system_prompt, request_messages_json, response_text, tool_calls_json)
-        VALUES (?, ?, ?, ?, ?)
-        RETURNING id, system_prompt, request_messages_json, response_text, tool_calls_json, created_at
-        "#,
-    )
-    .bind(&id)
-    .bind(system_prompt)
-    .bind(&request_messages_json)
-    .bind(&result.response_text)
-    .bind(&tool_calls_json)
-    .fetch_one(pool)
-    .await?;
+    let row = sqlx::query_as::<_, InferenceRecord>(include_str!("inferences/record.sql"))
+        .bind(&id)
+        .bind(system_prompt)
+        .bind(&request_messages_json)
+        .bind(&result.response_text)
+        .bind(&tool_calls_json)
+        .fetch_one(pool)
+        .await?;
 
     info!(
         inference_id = %row.id,
@@ -56,21 +50,17 @@ pub async fn record(
 }
 
 pub async fn get(pool: &SqlitePool, id: &str) -> Result<Option<InferenceRecord>, AppError> {
-    let row = sqlx::query_as::<_, InferenceRecord>(
-        "SELECT id, system_prompt, request_messages_json, response_text, tool_calls_json, created_at FROM inferences WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await?;
+    let row = sqlx::query_as::<_, InferenceRecord>(include_str!("inferences/get.sql"))
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
     Ok(row)
 }
 
 pub async fn list(pool: &SqlitePool, limit: i64) -> Result<Vec<InferenceRecord>, AppError> {
-    let rows = sqlx::query_as::<_, InferenceRecord>(
-        "SELECT id, system_prompt, request_messages_json, response_text, tool_calls_json, created_at FROM inferences ORDER BY created_at DESC LIMIT ?",
-    )
-    .bind(limit)
-    .fetch_all(pool)
-    .await?;
+    let rows = sqlx::query_as::<_, InferenceRecord>(include_str!("inferences/list.sql"))
+        .bind(limit)
+        .fetch_all(pool)
+        .await?;
     Ok(rows)
 }

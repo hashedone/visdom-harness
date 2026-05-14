@@ -25,7 +25,7 @@ pub async fn post_infer(
     Json(body): Json<InferRequest>,
 ) -> Result<Json<InferResponse>, AppError> {
     if body.prompt.is_empty() {
-        return Err(AppError::BadRequest("prompt must not be empty".to_string()));
+        return Err(AppError::EmptyPrompt);
     }
 
     tracing::Span::current().record("prompt_chars", body.prompt.len());
