@@ -1,8 +1,6 @@
-use std::future::Future;
 use std::net::SocketAddr;
 
 use serde_json::json;
-use tempfile::NamedTempFile;
 use tokio::net::TcpListener;
 use visdom_harness::error::AppError;
 use visdom_harness::llm::{InferenceMessage, InferenceResult, LlmClient, ToolCallRecord, ToolSpec};
@@ -12,35 +10,30 @@ use visdom_harness::{AppState, db};
 struct MockLlmClient;
 
 impl LlmClient for MockLlmClient {
-    fn infer(
+    async fn infer(
         &self,
         _system_prompt: &str,
         messages: &[InferenceMessage],
         _tools: &[ToolSpec],
-    ) -> impl Future<Output = Result<InferenceResult, AppError>> + Send {
+    ) -> Result<InferenceResult, AppError> {
         let prompt_text = messages
             .last()
             .map(|m| m.content.clone())
             .unwrap_or_default();
-        async move {
-            Ok(InferenceResult {
-                prompt_text,
-                response_text: String::new(),
-                tool_calls: vec![ToolCallRecord {
-                    id: "tc-001".to_string(),
-                    name: "get_weather".to_string(),
-                    arguments: json!({ "city": "London" }),
-                }],
-            })
-        }
+        Ok(InferenceResult {
+            prompt_text,
+            response_text: String::new(),
+            tool_calls: vec![ToolCallRecord {
+                id: "tc-001".to_string(),
+                name: "get_weather".to_string(),
+                arguments: json!({ "city": "London" }),
+            }],
+        })
     }
 }
 
 async fn spawn_app() -> SocketAddr {
-    let db_file = NamedTempFile::new().unwrap();
-    let db_url = format!("sqlite://{}?mode=rwc", db_file.path().display());
-    let pool = db::connect_and_migrate(&db_url).await.unwrap();
-    std::mem::forget(db_file);
+    let pool = db::in_memory_pool().await.unwrap();
 
     let state = AppState {
         pool,

@@ -1,7 +1,5 @@
-use std::future::Future;
 use std::net::SocketAddr;
 
-use tempfile::NamedTempFile;
 use tokio::net::TcpListener;
 use visdom_harness::error::AppError;
 use visdom_harness::llm::{InferenceMessage, InferenceResult, LlmClient, ToolSpec};
@@ -11,22 +9,18 @@ use visdom_harness::{AppState, db};
 struct NoopLlmClient;
 
 impl LlmClient for NoopLlmClient {
-    fn infer(
+    async fn infer(
         &self,
         _system_prompt: &str,
         _messages: &[InferenceMessage],
         _tools: &[ToolSpec],
-    ) -> impl Future<Output = Result<InferenceResult, AppError>> + Send {
-        async { Err(AppError::Llm("noop".to_string())) }
+    ) -> Result<InferenceResult, AppError> {
+        Err(AppError::Llm("noop".to_string()))
     }
 }
 
 async fn spawn_app() -> SocketAddr {
-    let db_file = NamedTempFile::new().unwrap();
-    let db_url = format!("sqlite://{}?mode=rwc", db_file.path().display());
-
-    let pool = db::connect_and_migrate(&db_url).await.unwrap();
-    std::mem::forget(db_file);
+    let pool = db::in_memory_pool().await.unwrap();
 
     let state = AppState {
         pool,

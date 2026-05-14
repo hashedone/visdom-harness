@@ -1,5 +1,3 @@
-use std::future::Future;
-
 use rig::completion::{AssistantContent, CompletionModel, ToolDefinition};
 use rig::message::{Message, UserContent};
 use rig::one_or_many::OneOrMany;
@@ -34,84 +32,79 @@ impl AnthropicLlmClient {
 }
 
 impl LlmClient for AnthropicLlmClient {
-    fn infer(
+    async fn infer(
         &self,
         system_prompt: &str,
         messages: &[InferenceMessage],
         tools: &[ToolSpec],
-    ) -> impl Future<Output = Result<InferenceResult, AppError>> + Send {
-        let system_prompt = system_prompt.to_string();
-        let messages = messages.to_vec();
-        let tools = tools.to_vec();
-        let model = self.model.clone();
+    ) -> Result<InferenceResult, AppError> {
+        let prompt_text = messages
+            .last()
+            .map(|m| m.content.clone())
+            .unwrap_or_default();
 
-        async move {
-            let prompt_text = messages
-                .last()
-                .map(|m| m.content.clone())
-                .unwrap_or_default();
+        let history: Vec<Message> = messages[..messages.len().saturating_sub(1)]
+            .iter()
+            .map(|m| match m.role {
+                MessageRole::User => Message::User {
+                    content: OneOrMany::one(UserContent::text(&m.content)),
+                },
+                MessageRole::Assistant => Message::Assistant {
+                    content: OneOrMany::one(AssistantContent::text(&m.content)),
+                },
+            })
+            .collect();
 
-            let history: Vec<Message> = messages[..messages.len().saturating_sub(1)]
-                .iter()
-                .map(|m| match m.role {
-                    MessageRole::User => Message::User {
-                        content: OneOrMany::one(UserContent::text(&m.content)),
-                    },
-                    MessageRole::Assistant => Message::Assistant {
-                        content: OneOrMany::one(AssistantContent::text(&m.content)),
-                    },
-                })
-                .collect();
+        let tool_defs: Vec<ToolDefinition> = tools
+            .iter()
+            .map(|t| ToolDefinition {
+                name: t.name.clone(),
+                description: t.description.clone(),
+                parameters: t.parameters.clone(),
+            })
+            .collect();
 
-            let tool_defs: Vec<ToolDefinition> = tools
-                .iter()
-                .map(|t| ToolDefinition {
-                    name: t.name.clone(),
-                    description: t.description.clone(),
-                    parameters: t.parameters.clone(),
-                })
-                .collect();
+        let prompt_msg = Message::User {
+            content: OneOrMany::one(UserContent::text(&prompt_text)),
+        };
 
-            let prompt_msg = Message::User {
-                content: OneOrMany::one(UserContent::text(&prompt_text)),
-            };
+        let request = self
+            .model
+            .completion_request(prompt_msg)
+            .preamble(system_prompt.to_string())
+            .messages(history)
+            .tools(tool_defs)
+            .build();
 
-            let request = model
-                .completion_request(prompt_msg)
-                .preamble(system_prompt)
-                .messages(history)
-                .tools(tool_defs)
-                .build();
+        let response = self
+            .model
+            .completion(request)
+            .await
+            .map_err(|e| AppError::Llm(e.to_string()))?;
 
-            let response = model
-                .completion(request)
-                .await
-                .map_err(|e| AppError::Llm(e.to_string()))?;
+        let mut response_text = String::new();
+        let mut tool_calls = Vec::new();
 
-            let mut response_text = String::new();
-            let mut tool_calls = Vec::new();
-
-            for item in response.choice.iter() {
-                match item {
-                    AssistantContent::Text(t) => {
-                        response_text = t.text.clone();
-                    }
-                    AssistantContent::ToolCall(tc) => {
-                        tool_calls.push(ToolCallRecord {
-                            id: tc.id.clone(),
-                            name: tc.function.name.clone(),
-                            arguments: tc.function.arguments.clone(),
-                        });
-                    }
+        for item in response.choice.iter() {
+            match item {
+                AssistantContent::Text(t) => {
+                    response_text = t.text.clone();
+                }
+                AssistantContent::ToolCall(tc) => {
+                    tool_calls.push(ToolCallRecord {
+                        id: tc.id.clone(),
+                        name: tc.function.name.clone(),
+                        arguments: tc.function.arguments.clone(),
+                    });
                 }
             }
-
-            Ok(InferenceResult {
-                prompt_text,
-                response_text,
-                tool_calls,
-            })
         }
+
+        Ok(InferenceResult {
+            prompt_text,
+            response_text,
+            tool_calls,
+        })
     }
 }
 
