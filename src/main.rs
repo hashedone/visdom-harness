@@ -1,10 +1,13 @@
 mod config;
 
+use std::sync::Arc;
+
 use config::Config;
 use eyre::Result;
 use tracing::info;
 use visdom_harness::AppState;
 use visdom_harness::db;
+use visdom_harness::llm::anthropic::AnthropicLlmClient;
 use visdom_harness::telemetry;
 
 #[tokio::main]
@@ -18,7 +21,11 @@ async fn main() -> Result<()> {
     let pool = db::connect_and_migrate(&cfg.database_url).await?;
     info!(database_url = %cfg.database_url, "database ready");
 
-    let state = AppState { pool };
+    let llm = AnthropicLlmClient::from_env()
+        .map_err(|e| eyre::eyre!("{}", e))?;
+    let llm = Arc::new(llm);
+
+    let state = AppState { pool, llm };
     let app = visdom_harness::build_app(state);
 
     let listener = tokio::net::TcpListener::bind(&cfg.bind_addr).await?;

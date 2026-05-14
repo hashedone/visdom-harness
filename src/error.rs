@@ -21,6 +21,9 @@ pub enum AppError {
 
     #[error("llm error: {0}")]
     Llm(String),
+
+    #[error("bad request: {0}")]
+    BadRequest(String),
 }
 
 impl IntoResponse for AppError {
@@ -28,6 +31,7 @@ impl IntoResponse for AppError {
         let (status, message) = match &self {
             AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
             AppError::Llm(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            AppError::BadRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
             AppError::Db(_) | AppError::Migration(_) | AppError::Internal(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
