@@ -32,7 +32,8 @@ async fn live_anthropic_round_trip() {
         return;
     }
 
-    let model = std::env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| "claude-sonnet-4-6".to_string());
+    let model =
+        std::env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| "claude-sonnet-4-6".to_string());
     let addr = spawn_live_app(&model).await;
     let client = reqwest::Client::new();
 

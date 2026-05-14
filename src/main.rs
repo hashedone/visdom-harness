@@ -19,7 +19,8 @@ async fn main() -> Result<()> {
     let pool = db::connect_and_migrate(&cfg.database_url).await?;
     info!(database_url = %cfg.database_url, "database ready");
 
-    let llm = AnthropicLlmClient::from_env(&cfg.anthropic_model).map_err(|e| eyre::eyre!("{}", e))?;
+    let llm =
+        AnthropicLlmClient::from_env(&cfg.anthropic_model).map_err(|e| eyre::eyre!("{}", e))?;
 
     let state = AppState { pool, llm };
     let app = visdom_harness::build_app(state);
