@@ -1,8 +1,7 @@
 use serde_json::json;
 use tempfile::NamedTempFile;
 use visdom_harness::{
-    db,
-    inferences,
+    db, inferences,
     llm::{InferenceMessage, InferenceResult, MessageRole, ToolCallRecord},
 };
 

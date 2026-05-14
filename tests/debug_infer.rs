@@ -19,7 +19,10 @@ impl LlmClient for MockLlmClient {
         messages: &[InferenceMessage],
         _tools: &[ToolSpec],
     ) -> Result<InferenceResult, AppError> {
-        let prompt_text = messages.last().map(|m| m.content.clone()).unwrap_or_default();
+        let prompt_text = messages
+            .last()
+            .map(|m| m.content.clone())
+            .unwrap_or_default();
         Ok(InferenceResult {
             prompt_text,
             response_text: String::new(),
@@ -77,7 +80,11 @@ async fn post_infer_returns_id_and_get_returns_record() {
         .await
         .expect("GET /debug/inferences/:id failed");
 
-    assert_eq!(resp.status(), 200, "expected 200 from GET /debug/inferences/:id");
+    assert_eq!(
+        resp.status(),
+        200,
+        "expected 200 from GET /debug/inferences/:id"
+    );
 
     let record: serde_json::Value = resp.json().await.expect("record not JSON");
     assert_eq!(record["id"], id);

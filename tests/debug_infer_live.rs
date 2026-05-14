@@ -64,7 +64,11 @@ async fn live_anthropic_round_trip() {
         .await
         .expect("GET /debug/inferences/:id failed");
 
-    assert_eq!(resp.status(), 200, "expected 200 from GET /debug/inferences/:id");
+    assert_eq!(
+        resp.status(),
+        200,
+        "expected 200 from GET /debug/inferences/:id"
+    );
 
     let record: serde_json::Value = resp.json().await.expect("record not JSON");
 
@@ -76,7 +80,9 @@ async fn live_anthropic_round_trip() {
         serde_json::from_str(record["tool_calls_json"].as_str().unwrap())
             .expect("tool_calls_json must be valid JSON");
 
-    let arr = tool_calls.as_array().expect("tool_calls_json must be an array");
+    let arr = tool_calls
+        .as_array()
+        .expect("tool_calls_json must be an array");
     assert!(!arr.is_empty(), "expected at least one tool call");
 
     let get_weather_call = arr.iter().find(|tc| tc["name"] == "get_weather");

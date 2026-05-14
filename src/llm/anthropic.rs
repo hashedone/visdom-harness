@@ -1,7 +1,7 @@
 use rig::completion::{AssistantContent, CompletionModel, ToolDefinition};
 use rig::message::{Message, UserContent};
 use rig::one_or_many::OneOrMany;
-use rig::providers::anthropic::{completion::CLAUDE_3_7_SONNET, ClientBuilder};
+use rig::providers::anthropic::{ClientBuilder, completion::CLAUDE_3_7_SONNET};
 use tracing::instrument;
 
 use crate::error::AppError;

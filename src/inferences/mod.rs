@@ -25,8 +25,8 @@ pub async fn record(
     messages: &[InferenceMessage],
 ) -> Result<InferenceRecord, AppError> {
     let id = Uuid::new_v4().to_string();
-    let request_messages_json = serde_json::to_string(messages)
-        .map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
+    let request_messages_json =
+        serde_json::to_string(messages).map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
     let tool_calls_json = serde_json::to_string(&result.tool_calls)
         .map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
 
