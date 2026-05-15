@@ -36,7 +36,7 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
     let selected_entities: Resource<Option<Result<Vec<Entity>, ApiError>>> =
         use_resource(move || async move {
             let id = project_id?;
-            Some(api::fetch_project_entities(id).await)
+            Some(api::fetch_project_entities(id, 0, 50).await.map(|p| p.items))
         });
 
     let selected_project: Resource<Option<Result<Project, ApiError>>> =
@@ -186,9 +186,14 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
                                     match &*description_entity.read() {
                                         None | Some(None) => rsx! { div { class: "loading", "Loading…" } },
                                         Some(Some(Err(e))) => rsx! { div { class: "error", "Error: {e}" } },
-                                        Some(Some(Ok(desc))) => rsx! {
-                                            pre { class: "content-json",
-                                                {serde_json::to_string_pretty(&desc.content).unwrap_or_default()}
+                                        Some(Some(Ok(desc))) => {
+                                            let preview = desc.content
+                                                .get("text")
+                                                .and_then(|v| v.as_str())
+                                                .unwrap_or_default()
+                                                .to_string();
+                                            rsx! {
+                                                div { class: "prose-block", "{preview}" }
                                             }
                                         }
                                     }

@@ -1,18 +1,32 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
+use serde::Deserialize;
 use tracing::instrument;
 use uuid::Uuid;
 
 use crate::AppState;
-use crate::entities::{self, Entity};
+use crate::entities::{self, Entity, Page};
 use crate::error::AppError;
 use crate::llm::LlmClient;
 
+#[derive(Debug, Deserialize)]
+pub struct PaginationParams {
+    #[serde(default = "default_limit")]
+    pub limit: i64,
+    #[serde(default)]
+    pub offset: i64,
+}
+
+fn default_limit() -> i64 {
+    50
+}
+
 pub async fn list_entities<L: LlmClient>(
     State(state): State<AppState<L>>,
-) -> Result<Json<Vec<Entity>>, AppError> {
-    let entities = entities::list(&state.pool, 500).await?;
-    Ok(Json(entities))
+    Query(pagination): Query<PaginationParams>,
+) -> Result<Json<Page<Entity>>, AppError> {
+    let page = entities::list(&state.pool, pagination.limit, pagination.offset).await?;
+    Ok(Json(page))
 }
 
 #[instrument(skip(state), fields(entity_id = %id))]

@@ -3,6 +3,14 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Page<T> {
+    pub items: Vec<T>,
+    pub total: i64,
+    pub limit: i64,
+    pub offset: i64,
+}
+
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum EntityType {
@@ -108,23 +116,33 @@ pub async fn get(pool: &SqlitePool, id: Uuid) -> Result<Option<Entity>, AppError
     Ok(entity)
 }
 
-pub async fn list(pool: &SqlitePool, limit: i64) -> Result<Vec<Entity>, AppError> {
-    let entities = sqlx::query_as::<_, Entity>(include_str!("entities/list.sql"))
+pub async fn list(pool: &SqlitePool, limit: i64, offset: i64) -> Result<Page<Entity>, AppError> {
+    let total: i64 = sqlx::query_scalar(include_str!("entities/count.sql"))
+        .fetch_one(pool)
+        .await?;
+    let items = sqlx::query_as::<_, Entity>(include_str!("entities/list.sql"))
         .bind(limit)
+        .bind(offset)
         .fetch_all(pool)
         .await?;
-    Ok(entities)
+    Ok(Page { items, total, limit, offset })
 }
 
 pub async fn list_by_project(
     pool: &SqlitePool,
     project_id: Uuid,
     limit: i64,
-) -> Result<Vec<Entity>, AppError> {
-    let entities = sqlx::query_as::<_, Entity>(include_str!("entities/list_by_project.sql"))
+    offset: i64,
+) -> Result<Page<Entity>, AppError> {
+    let total: i64 = sqlx::query_scalar(include_str!("entities/count_by_project.sql"))
+        .bind(project_id)
+        .fetch_one(pool)
+        .await?;
+    let items = sqlx::query_as::<_, Entity>(include_str!("entities/list_by_project.sql"))
         .bind(project_id)
         .bind(limit)
+        .bind(offset)
         .fetch_all(pool)
         .await?;
-    Ok(entities)
+    Ok(Page { items, total, limit, offset })
 }

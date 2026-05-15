@@ -1,1 +1,1 @@
-SELECT * FROM entities ORDER BY created_at DESC LIMIT ?
+SELECT * FROM entities ORDER BY created_at DESC LIMIT ? OFFSET ?

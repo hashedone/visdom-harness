@@ -1,6 +1,14 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Page<T> {
+    pub items: Vec<T>,
+    pub total: i64,
+    pub limit: i64,
+    pub offset: i64,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ApiError {
     Network(String),
@@ -87,28 +95,36 @@ pub async fn fetch_project(id: Uuid) -> Result<Project, ApiError> {
         .map_err(|e| ApiError::Deserialize(e.to_string()))
 }
 
-pub async fn fetch_entities() -> Result<Vec<Entity>, ApiError> {
-    let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/entities"))
-        .send()
-        .await
-        .map_err(|e| ApiError::Network(e.to_string()))?;
+pub async fn fetch_entities(offset: i64, limit: i64) -> Result<Page<Entity>, ApiError> {
+    let resp = gloo_net::http::Request::get(&format!(
+        "{BASE_URL}/entities?limit={limit}&offset={offset}"
+    ))
+    .send()
+    .await
+    .map_err(|e| ApiError::Network(e.to_string()))?;
     if !resp.ok() {
         return Err(ApiError::HttpError(resp.status()));
     }
-    resp.json::<Vec<Entity>>()
+    resp.json::<Page<Entity>>()
         .await
         .map_err(|e| ApiError::Deserialize(e.to_string()))
 }
 
-pub async fn fetch_project_entities(project_id: Uuid) -> Result<Vec<Entity>, ApiError> {
-    let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/projects/{project_id}/entities"))
-        .send()
-        .await
-        .map_err(|e| ApiError::Network(e.to_string()))?;
+pub async fn fetch_project_entities(
+    project_id: Uuid,
+    offset: i64,
+    limit: i64,
+) -> Result<Page<Entity>, ApiError> {
+    let resp = gloo_net::http::Request::get(&format!(
+        "{BASE_URL}/projects/{project_id}/entities?limit={limit}&offset={offset}"
+    ))
+    .send()
+    .await
+    .map_err(|e| ApiError::Network(e.to_string()))?;
     if !resp.ok() {
         return Err(ApiError::HttpError(resp.status()));
     }
-    resp.json::<Vec<Entity>>()
+    resp.json::<Page<Entity>>()
         .await
         .map_err(|e| ApiError::Deserialize(e.to_string()))
 }

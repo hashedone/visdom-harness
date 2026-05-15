@@ -1,1 +1,1 @@
-SELECT * FROM entities WHERE project_id = ? ORDER BY created_at DESC LIMIT ?
+SELECT * FROM entities WHERE project_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?

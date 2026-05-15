@@ -1,8 +1,10 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::api::{self, ApiError, Entity};
+use crate::api::{self, ApiError, Entity, Page};
 use crate::routes::Route;
+
+const PAGE_SIZE: i64 = 50;
 
 #[derive(Clone, Copy, PartialEq)]
 enum SortCol {
@@ -28,11 +30,23 @@ pub fn EntityDetail(entity_id: Uuid) -> Element {
 }
 
 fn entities_view(selected_id: Option<Uuid>) -> Element {
-    let entities = use_resource(api::fetch_entities);
     let mut project_filter = use_signal(|| Option::<Uuid>::None);
     let mut type_filter = use_signal(String::new);
     let mut sort_col = use_signal(|| SortCol::CreatedAt);
     let mut sort_dir = use_signal(|| SortDir::Desc);
+    let mut offset = use_signal(|| 0i64);
+
+    // Reset to page 0 when the project filter changes
+    let pf_for_fetch = *project_filter.read();
+    let offset_val = *offset.read();
+
+    let entities: Resource<Result<Page<Entity>, ApiError>> = use_resource(move || async move {
+        let _ = pf_for_fetch; // track dependency
+        match pf_for_fetch {
+            None => api::fetch_entities(offset_val, PAGE_SIZE).await,
+            Some(pid) => api::fetch_project_entities(pid, offset_val, PAGE_SIZE).await,
+        }
+    });
 
     let selected_entity: Resource<Option<Result<Entity, ApiError>>> =
         use_resource(move || async move {
@@ -58,12 +72,10 @@ fn entities_view(selected_id: Option<Uuid>) -> Element {
                     match &*entities.read() {
                         None => rsx! { div { class: "loading", "Loading…" } },
                         Some(Err(e)) => rsx! { div { class: "error", "Error: {e}" } },
-                        Some(Ok(list)) => {
-                            let pf = *project_filter.read();
+                        Some(Ok(page)) => {
                             let tf = type_filter.read().to_lowercase();
-                            let mut items: Vec<Entity> = list
+                            let mut items: Vec<Entity> = page.items
                                 .iter()
-                                .filter(|e| pf.is_none_or(|pid| e.project_id == pid))
                                 .filter(|e| tf.is_empty() || e.entity_type.to_string().contains(&*tf))
                                 .cloned()
                                 .collect();
@@ -82,6 +94,13 @@ fn entities_view(selected_id: Option<Uuid>) -> Element {
                                     items.sort_by(|a, b| b.created_at.cmp(&a.created_at))
                                 }
                             }
+
+                            let total = page.total;
+                            let current_offset = page.offset;
+                            let has_prev = current_offset > 0;
+                            let has_next = current_offset + PAGE_SIZE < total;
+                            let page_num = current_offset / PAGE_SIZE + 1;
+                            let total_pages = (total + PAGE_SIZE - 1) / PAGE_SIZE;
 
                             rsx! {
                                 table { class: "data-table",
@@ -132,12 +151,13 @@ fn entities_view(selected_id: Option<Uuid>) -> Element {
                                                         onclick: move |_| {
                                                             navigator().push(Route::EntityDetail { entity_id: eid });
                                                         },
-                                                        td { class: "badge", "{e.entity_type}" }
+                                                        td { span { class: "badge", "{e.entity_type}" } }
                                                         td {
                                                             class: "mono small",
                                                             onclick: move |evt| {
                                                                 evt.stop_propagation();
                                                                 project_filter.set(Some(pid));
+                                                                offset.set(0);
                                                             },
                                                             "{e.project_id}"
                                                         }
@@ -149,12 +169,33 @@ fn entities_view(selected_id: Option<Uuid>) -> Element {
                                     }
                                 }
 
+                                div { class: "pagination",
+                                    button {
+                                        class: "pagination__btn",
+                                        disabled: !has_prev,
+                                        onclick: move |_| offset.set((current_offset - PAGE_SIZE).max(0)),
+                                        "← Prev"
+                                    }
+                                    span { class: "pagination__info",
+                                        "Page {page_num} of {total_pages} ({total} total)"
+                                    }
+                                    button {
+                                        class: "pagination__btn",
+                                        disabled: !has_next,
+                                        onclick: move |_| offset.set(current_offset + PAGE_SIZE),
+                                        "Next →"
+                                    }
+                                }
+
                                 if project_filter.read().is_some() {
                                     div { class: "filter-banner",
                                         span { "Filtered by project" }
                                         button {
                                             class: "filter-clear",
-                                            onclick: move |_| project_filter.set(None),
+                                            onclick: move |_| {
+                                                project_filter.set(None);
+                                                offset.set(0);
+                                            },
                                             "✕ Clear"
                                         }
                                     }
@@ -223,8 +264,28 @@ fn entities_view(selected_id: Option<Uuid>) -> Element {
 
                             div { class: "detail-section",
                                 h3 { class: "section-title", "Content" }
-                                pre { class: "content-json",
-                                    {serde_json::to_string_pretty(&e.content).unwrap_or_default()}
+                                div { class: "content-fields",
+                                    for (key, val) in e.content.as_object().into_iter().flatten() {
+                                        if !val.is_null() {
+                                            {
+                                                let key = key.clone();
+                                                let is_text = key == "text";
+                                                let val_str = val.as_str()
+                                                    .map(|s| s.to_string())
+                                                    .unwrap_or_else(|| val.to_string());
+                                                rsx! {
+                                                    div {
+                                                        div { class: "content-field__label", "{key}" }
+                                                        if is_text {
+                                                            div { class: "prose-block", "{val_str}" }
+                                                        } else {
+                                                            span { class: "content-field__scalar", "{val_str}" }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
