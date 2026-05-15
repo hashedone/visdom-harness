@@ -1,4 +1,4 @@
-use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
+use sqlx::{Executor, SqlitePool, sqlite::SqlitePoolOptions};
 use tracing::info;
 
 use crate::error::AppError;
@@ -6,6 +6,12 @@ use crate::error::AppError;
 pub async fn connect_and_migrate(database_url: &str) -> Result<SqlitePool, AppError> {
     let pool = SqlitePoolOptions::new()
         .max_connections(5)
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                conn.execute(include_str!("db/foreign_keys.sql")).await?;
+                Ok(())
+            })
+        })
         .connect(database_url)
         .await?;
 
@@ -19,6 +25,12 @@ pub async fn connect_and_migrate(database_url: &str) -> Result<SqlitePool, AppEr
 pub async fn in_memory_pool() -> Result<SqlitePool, AppError> {
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                conn.execute(include_str!("db/foreign_keys.sql")).await?;
+                Ok(())
+            })
+        })
         .connect("sqlite::memory:")
         .await?;
 

@@ -1,8 +1,10 @@
 pub mod db;
+pub mod entities;
 pub mod error;
 pub mod http;
 pub mod inferences;
 pub mod llm;
+pub mod projects;
 pub mod telemetry;
 
 use axum::Router;
