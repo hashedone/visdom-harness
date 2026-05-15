@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::api::{self, Entity};
+use crate::api::{self, ApiError, Entity};
 use crate::routes::Route;
 
 #[allow(non_snake_case)]
@@ -24,7 +24,7 @@ pub fn Entities() -> Element {
 #[allow(non_snake_case)]
 #[component]
 pub fn EntityDetail(entity_id: Uuid) -> Element {
-    let entity: Resource<Result<Entity, String>> =
+    let entity: Resource<Result<Entity, ApiError>> =
         use_resource(move || async move { api::fetch_entity(entity_id).await });
 
     rsx! {

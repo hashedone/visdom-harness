@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::api::{self, Entity, Project};
+use crate::api::{self, ApiError, Entity, Project};
 use crate::routes::Route;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -33,13 +33,13 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
     let mut sort_col = use_signal(|| SortCol::CreatedAt);
     let mut sort_dir = use_signal(|| SortDir::Desc);
 
-    let selected_entities: Resource<Option<Result<Vec<Entity>, String>>> =
+    let selected_entities: Resource<Option<Result<Vec<Entity>, ApiError>>> =
         use_resource(move || async move {
             let id = project_id?;
             Some(api::fetch_project_entities(id).await)
         });
 
-    let selected_project: Resource<Option<Result<Project, String>>> =
+    let selected_project: Resource<Option<Result<Project, ApiError>>> =
         use_resource(move || async move {
             let id = project_id?;
             Some(api::fetch_project(id).await)

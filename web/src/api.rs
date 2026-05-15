@@ -1,6 +1,25 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum ApiError {
+    Network(String),
+    NotFound,
+    HttpError(u16),
+    Deserialize(String),
+}
+
+impl std::fmt::Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ApiError::Network(msg) => write!(f, "Network error: {msg}"),
+            ApiError::NotFound => write!(f, "Not found"),
+            ApiError::HttpError(status) => write!(f, "HTTP {status}"),
+            ApiError::Deserialize(msg) => write!(f, "Deserialize error: {msg}"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Project {
     pub id: Uuid,
@@ -39,52 +58,60 @@ pub struct Entity {
 
 const BASE_URL: &str = "http://127.0.0.1:3000";
 
-pub async fn fetch_projects() -> Result<Vec<Project>, String> {
+pub async fn fetch_projects() -> Result<Vec<Project>, ApiError> {
     let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/projects"))
         .send()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| ApiError::Network(e.to_string()))?;
     if !resp.ok() {
-        return Err(format!("HTTP {}", resp.status()));
+        return Err(ApiError::HttpError(resp.status()));
     }
-    resp.json::<Vec<Project>>().await.map_err(|e| e.to_string())
+    resp.json::<Vec<Project>>()
+        .await
+        .map_err(|e| ApiError::Deserialize(e.to_string()))
 }
 
-pub async fn fetch_project(id: Uuid) -> Result<Project, String> {
+pub async fn fetch_project(id: Uuid) -> Result<Project, ApiError> {
     let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/projects/{id}"))
         .send()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| ApiError::Network(e.to_string()))?;
     if resp.status() == 404 {
-        return Err("Not found".into());
+        return Err(ApiError::NotFound);
     }
     if !resp.ok() {
-        return Err(format!("HTTP {}", resp.status()));
+        return Err(ApiError::HttpError(resp.status()));
     }
-    resp.json::<Project>().await.map_err(|e| e.to_string())
+    resp.json::<Project>()
+        .await
+        .map_err(|e| ApiError::Deserialize(e.to_string()))
 }
 
-pub async fn fetch_project_entities(project_id: Uuid) -> Result<Vec<Entity>, String> {
+pub async fn fetch_project_entities(project_id: Uuid) -> Result<Vec<Entity>, ApiError> {
     let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/projects/{project_id}/entities"))
         .send()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| ApiError::Network(e.to_string()))?;
     if !resp.ok() {
-        return Err(format!("HTTP {}", resp.status()));
+        return Err(ApiError::HttpError(resp.status()));
     }
-    resp.json::<Vec<Entity>>().await.map_err(|e| e.to_string())
+    resp.json::<Vec<Entity>>()
+        .await
+        .map_err(|e| ApiError::Deserialize(e.to_string()))
 }
 
-pub async fn fetch_entity(id: Uuid) -> Result<Entity, String> {
+pub async fn fetch_entity(id: Uuid) -> Result<Entity, ApiError> {
     let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/entities/{id}"))
         .send()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| ApiError::Network(e.to_string()))?;
     if resp.status() == 404 {
-        return Err("Not found".into());
+        return Err(ApiError::NotFound);
     }
     if !resp.ok() {
-        return Err(format!("HTTP {}", resp.status()));
+        return Err(ApiError::HttpError(resp.status()));
     }
-    resp.json::<Entity>().await.map_err(|e| e.to_string())
+    resp.json::<Entity>()
+        .await
+        .map_err(|e| ApiError::Deserialize(e.to_string()))
 }
