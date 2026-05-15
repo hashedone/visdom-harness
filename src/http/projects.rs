@@ -40,6 +40,8 @@ pub async fn get_project<L: LlmClient>(
     State(state): State<AppState<L>>,
     Path(id): Path<String>,
 ) -> Result<Json<Project>, AppError> {
-    let project = projects::get(&state.pool, &id).await?.ok_or(AppError::NotFound)?;
+    let project = projects::get(&state.pool, &id)
+        .await?
+        .ok_or(AppError::NotFound)?;
     Ok(Json(project))
 }

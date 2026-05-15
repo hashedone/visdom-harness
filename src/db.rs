@@ -1,4 +1,4 @@
-use sqlx::{SqlitePool, sqlite::SqlitePoolOptions, Executor};
+use sqlx::{Executor, SqlitePool, sqlite::SqlitePoolOptions};
 use tracing::info;
 
 use crate::error::AppError;

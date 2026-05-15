@@ -33,10 +33,9 @@ pub async fn get(pool: &SqlitePool, id: &str) -> Result<Option<Project>, AppErro
 }
 
 pub async fn exists(pool: &SqlitePool, id: &str) -> Result<bool, AppError> {
-    let row: Option<(i64,)> =
-        sqlx::query_as("SELECT 1 FROM projects WHERE id = ? LIMIT 1")
-            .bind(id)
-            .fetch_optional(pool)
-            .await?;
+    let row: Option<(i64,)> = sqlx::query_as("SELECT 1 FROM projects WHERE id = ? LIMIT 1")
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
     Ok(row.is_some())
 }

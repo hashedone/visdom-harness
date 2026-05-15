@@ -1,4 +1,4 @@
-use sqlx::{SqlitePool, Row, sqlite::SqliteRow};
+use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
 use uuid::Uuid;
 
 use crate::error::AppError;
@@ -25,7 +25,9 @@ impl EntityType {
             "raw" => Ok(EntityType::Raw),
             "knowledge" => Ok(EntityType::Knowledge),
             "summary" => Ok(EntityType::Summary),
-            other => Err(AppError::Internal(eyre::eyre!("unknown entity_type: {other}"))),
+            other => Err(AppError::Internal(eyre::eyre!(
+                "unknown entity_type: {other}"
+            ))),
         }
     }
 }
@@ -52,8 +54,8 @@ impl<'r> sqlx::FromRow<'r, SqliteRow> for Entity {
         let entity_type = EntityType::from_db_str(&entity_type_str)
             .map_err(|e| sqlx::Error::Decode(Box::new(std::io::Error::other(e.to_string()))))?;
 
-        let content: serde_json::Value = serde_json::from_str(&content_json)
-            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        let content: serde_json::Value =
+            serde_json::from_str(&content_json).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
         let contributing_entity_ids: Vec<String> = serde_json::from_str(&contributing_json)
             .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
@@ -78,8 +80,8 @@ pub async fn create(
 ) -> Result<Entity, AppError> {
     let id = Uuid::new_v4().to_string();
     let entity_type_str = entity_type.as_db_str();
-    let content_json = serde_json::to_string(&content)
-        .map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
+    let content_json =
+        serde_json::to_string(&content).map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
     let contributing_json = serde_json::to_string(&contributing_entity_ids)
         .map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
 
