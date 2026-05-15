@@ -45,6 +45,14 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
             Some(api::fetch_project(id).await)
         });
 
+    let description_entity: Resource<Option<Result<Entity, ApiError>>> =
+        use_resource(move || async move {
+            let id = project_id?;
+            // fetch project first to get description_entity_id, then fetch that entity
+            let project = api::fetch_project(id).await.ok()?;
+            Some(api::fetch_entity(project.description_entity_id).await)
+        });
+
     rsx! {
         div { class: "split-view",
             div { class: if project_id.is_some() { "list-pane list-pane--narrow" } else { "list-pane" },
@@ -170,6 +178,19 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
                                         to: Route::EntityDetail { entity_id: p.description_entity_id },
                                         class: "entity-link mono small",
                                         "{p.description_entity_id}"
+                                    }
+                                }
+
+                                div { class: "detail-section",
+                                    h3 { class: "section-title", "Description" }
+                                    match &*description_entity.read() {
+                                        None | Some(None) => rsx! { div { class: "loading", "Loading…" } },
+                                        Some(Some(Err(e))) => rsx! { div { class: "error", "Error: {e}" } },
+                                        Some(Some(Ok(desc))) => rsx! {
+                                            pre { class: "content-json",
+                                                {serde_json::to_string_pretty(&desc.content).unwrap_or_default()}
+                                            }
+                                        }
                                     }
                                 }
                             }

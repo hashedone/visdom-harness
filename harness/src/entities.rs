@@ -108,6 +108,14 @@ pub async fn get(pool: &SqlitePool, id: Uuid) -> Result<Option<Entity>, AppError
     Ok(entity)
 }
 
+pub async fn list(pool: &SqlitePool, limit: i64) -> Result<Vec<Entity>, AppError> {
+    let entities = sqlx::query_as::<_, Entity>(include_str!("entities/list.sql"))
+        .bind(limit)
+        .fetch_all(pool)
+        .await?;
+    Ok(entities)
+}
+
 pub async fn list_by_project(
     pool: &SqlitePool,
     project_id: Uuid,

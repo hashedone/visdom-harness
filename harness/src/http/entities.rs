@@ -8,6 +8,13 @@ use crate::entities::{self, Entity};
 use crate::error::AppError;
 use crate::llm::LlmClient;
 
+pub async fn list_entities<L: LlmClient>(
+    State(state): State<AppState<L>>,
+) -> Result<Json<Vec<Entity>>, AppError> {
+    let entities = entities::list(&state.pool, 500).await?;
+    Ok(Json(entities))
+}
+
 #[instrument(skip(state), fields(entity_id = %id))]
 pub async fn get_entity<L: LlmClient>(
     State(state): State<AppState<L>>,

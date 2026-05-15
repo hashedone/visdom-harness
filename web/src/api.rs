@@ -87,6 +87,19 @@ pub async fn fetch_project(id: Uuid) -> Result<Project, ApiError> {
         .map_err(|e| ApiError::Deserialize(e.to_string()))
 }
 
+pub async fn fetch_entities() -> Result<Vec<Entity>, ApiError> {
+    let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/entities"))
+        .send()
+        .await
+        .map_err(|e| ApiError::Network(e.to_string()))?;
+    if !resp.ok() {
+        return Err(ApiError::HttpError(resp.status()));
+    }
+    resp.json::<Vec<Entity>>()
+        .await
+        .map_err(|e| ApiError::Deserialize(e.to_string()))
+}
+
 pub async fn fetch_project_entities(project_id: Uuid) -> Result<Vec<Entity>, ApiError> {
     let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/projects/{project_id}/entities"))
         .send()

@@ -24,6 +24,7 @@ pub fn router<L: LlmClient>(state: AppState<L>) -> Router {
             "/projects/:id/entities",
             get(projects::list_project_entities::<L>),
         )
+        .route("/entities", get(entities::list_entities::<L>))
         .route("/entities/:id", get(entities::get_entity::<L>))
         .with_state(state)
 }
