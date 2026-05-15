@@ -178,7 +178,9 @@ async fn get_entity_unknown_id_returns_404() {
     let client = reqwest::Client::new();
 
     let resp = client
-        .get(format!("http://{addr}/entities/00000000-0000-0000-0000-000000000000"))
+        .get(format!(
+            "http://{addr}/entities/00000000-0000-0000-0000-000000000000"
+        ))
         .send()
         .await
         .unwrap();
