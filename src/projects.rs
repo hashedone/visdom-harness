@@ -30,7 +30,7 @@ pub async fn create_in_tx(
 
     // Step 1: insert stub — description_entity_id nullable until step 3
     sqlx::query(include_str!("projects/insert_stub.sql"))
-        .bind(&project_id)
+        .bind(project_id)
         .bind(name)
         .execute(&mut **tx)
         .await?;
