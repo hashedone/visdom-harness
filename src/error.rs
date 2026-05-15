@@ -28,6 +28,12 @@ pub enum AppError {
 
     #[error("prompt must not be empty")]
     EmptyPrompt,
+
+    #[error("name must not be empty")]
+    EmptyName,
+
+    #[error("description must not be empty")]
+    EmptyDescription,
 }
 
 impl IntoResponse for AppError {
@@ -36,7 +42,9 @@ impl IntoResponse for AppError {
             AppError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
             AppError::Llm(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             AppError::MissingApiKey => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
-            AppError::EmptyPrompt => (StatusCode::BAD_REQUEST, self.to_string()),
+            AppError::EmptyPrompt | AppError::EmptyName | AppError::EmptyDescription => {
+                (StatusCode::BAD_REQUEST, self.to_string())
+            }
             AppError::Db(_) | AppError::Migration(_) | AppError::Internal(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
