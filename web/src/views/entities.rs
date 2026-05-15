@@ -63,7 +63,7 @@ fn entities_view(selected_id: Option<Uuid>) -> Element {
                             let tf = type_filter.read().to_lowercase();
                             let mut items: Vec<Entity> = list
                                 .iter()
-                                .filter(|e| pf.map_or(true, |pid| e.project_id == pid))
+                                .filter(|e| pf.is_none_or(|pid| e.project_id == pid))
                                 .filter(|e| tf.is_empty() || e.entity_type.to_string().contains(&*tf))
                                 .cloned()
                                 .collect();
