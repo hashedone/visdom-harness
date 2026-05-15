@@ -122,14 +122,15 @@ async fn entity_list_by_project_returns_most_recent_first() {
     .await
     .unwrap();
 
-    let list = entities::list_by_project(&pool, project.id, 10)
+    let page = entities::list_by_project(&pool, project.id, 10, 0)
         .await
         .unwrap();
     // 1 description entity from project creation + 3 explicit entities
-    assert_eq!(list.len(), 4);
+    assert_eq!(page.total, 4);
+    assert_eq!(page.items.len(), 4);
 
     // all three IDs present regardless of sub-second ordering
-    let ids: Vec<Uuid> = list.iter().map(|e| e.id).collect();
+    let ids: Vec<Uuid> = page.items.iter().map(|e| e.id).collect();
     assert!(ids.contains(&raw.id));
     assert!(ids.contains(&knowledge.id));
     assert!(ids.contains(&summary.id));

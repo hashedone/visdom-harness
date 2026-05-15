@@ -9,6 +9,7 @@ pub mod telemetry;
 
 use axum::Router;
 use sqlx::SqlitePool;
+use tower_http::cors::CorsLayer;
 
 use crate::llm::LlmClient;
 
@@ -19,5 +20,5 @@ pub struct AppState<L: LlmClient> {
 }
 
 pub fn build_app<L: LlmClient>(state: AppState<L>) -> Router {
-    http::router(state)
+    http::router(state).layer(CorsLayer::permissive())
 }

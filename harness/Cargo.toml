@@ -13,6 +13,7 @@ path = "src/lib.rs"
 
 [dependencies]
 axum = "0.7"
+tower-http = { version = "0.5", features = ["cors"] }
 tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio", "migrate", "macros", "chrono", "uuid"] }
 tracing = "0.1"
