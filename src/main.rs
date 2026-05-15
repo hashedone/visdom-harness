@@ -11,6 +11,7 @@ use visdom_harness::telemetry;
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
+    dotenvy::dotenv().ok();
 
     let cfg = Config::load()?;
 
