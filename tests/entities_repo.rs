@@ -126,7 +126,8 @@ async fn entity_list_by_project_returns_most_recent_first() {
     let list = entities::list_by_project(&pool, &project.id, 10)
         .await
         .unwrap();
-    assert_eq!(list.len(), 3);
+    // 1 description entity from project creation + 3 explicit entities
+    assert_eq!(list.len(), 4);
 
     // all three IDs present regardless of sub-second ordering
     let ids: Vec<&str> = list.iter().map(|e| e.id.as_str()).collect();

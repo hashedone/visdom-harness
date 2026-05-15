@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
+    description_entity_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

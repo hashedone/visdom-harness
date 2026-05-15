@@ -15,7 +15,7 @@ pub struct CreateProjectRequest {
     pub description: String,
 }
 
-#[instrument(skip(state), fields(name_chars, description_chars))]
+#[instrument(skip(state), fields(name, description_chars))]
 pub async fn create_project<L: LlmClient>(
     State(state): State<AppState<L>>,
     Json(body): Json<CreateProjectRequest>,
@@ -27,11 +27,18 @@ pub async fn create_project<L: LlmClient>(
         return Err(AppError::EmptyDescription);
     }
 
-    tracing::Span::current().record("name_chars", body.name.len());
+    tracing::Span::current().record("name", &body.name);
     tracing::Span::current().record("description_chars", body.description.len());
 
-    let project = projects::create(&state.pool, &body.name, &body.description).await?;
-    tracing::info!(project_id = %project.id, "project created");
+    let mut tx = state.pool.begin().await?;
+    let project = projects::create_in_tx(&mut tx, &body.name, &body.description).await?;
+    tx.commit().await?;
+
+    tracing::info!(
+        project_id = %project.id,
+        description_entity_id = %project.description_entity_id,
+        "project created"
+    );
     Ok((StatusCode::CREATED, Json(project)))
 }
 

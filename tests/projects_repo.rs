@@ -18,13 +18,13 @@ async fn project_create_and_get_round_trip() {
 
     assert!(!created.id.is_empty());
     assert_eq!(created.name, "test project");
-    assert_eq!(created.description, "a description");
+    assert!(!created.description_entity_id.is_empty());
     assert!(!created.created_at.is_empty());
 
     let fetched = projects::get(&pool, &created.id).await.unwrap().unwrap();
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.name, created.name);
-    assert_eq!(fetched.description, created.description);
+    assert_eq!(fetched.description_entity_id, created.description_entity_id);
     assert_eq!(fetched.created_at, created.created_at);
 }
 

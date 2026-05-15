@@ -60,7 +60,12 @@ async fn create_project_returns_201_with_project() {
     let id = body["id"].as_str().expect("missing id");
     assert!(!id.is_empty());
     assert_eq!(body["name"], "Alpha");
-    assert_eq!(body["description"], "first project");
+    assert!(
+        !body["description_entity_id"]
+            .as_str()
+            .unwrap_or("")
+            .is_empty()
+    );
     assert!(!body["created_at"].as_str().unwrap_or("").is_empty());
 }
 

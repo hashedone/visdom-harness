@@ -1,4 +1,4 @@
-use sqlx::{Row, SqlitePool, sqlite::SqliteRow};
+use sqlx::{Row, Sqlite, SqlitePool, sqlite::SqliteRow};
 use uuid::Uuid;
 
 use crate::error::AppError;
@@ -71,13 +71,16 @@ impl<'r> sqlx::FromRow<'r, SqliteRow> for Entity {
     }
 }
 
-pub async fn create(
-    pool: &SqlitePool,
+pub async fn create<'e, E>(
+    executor: E,
     project_id: &str,
     entity_type: EntityType,
     content: serde_json::Value,
     contributing_entity_ids: Vec<String>,
-) -> Result<Entity, AppError> {
+) -> Result<Entity, AppError>
+where
+    E: sqlx::Executor<'e, Database = Sqlite>,
+{
     let id = Uuid::new_v4().to_string();
     let entity_type_str = entity_type.as_db_str();
     let content_json =
@@ -85,23 +88,20 @@ pub async fn create(
     let contributing_json = serde_json::to_string(&contributing_entity_ids)
         .map_err(|e| AppError::Internal(eyre::Report::from(e)))?;
 
-    let entity = sqlx::query_as::<_, Entity>(
-        "INSERT INTO entities (id, project_id, entity_type, content_json, contributing_entity_ids_json)
-         VALUES (?, ?, ?, ?, ?) RETURNING *",
-    )
-    .bind(&id)
-    .bind(project_id)
-    .bind(entity_type_str)
-    .bind(&content_json)
-    .bind(&contributing_json)
-    .fetch_one(pool)
-    .await?;
+    let entity = sqlx::query_as::<_, Entity>(include_str!("entities/create.sql"))
+        .bind(&id)
+        .bind(project_id)
+        .bind(entity_type_str)
+        .bind(&content_json)
+        .bind(&contributing_json)
+        .fetch_one(executor)
+        .await?;
 
     Ok(entity)
 }
 
 pub async fn get(pool: &SqlitePool, id: &str) -> Result<Option<Entity>, AppError> {
-    let entity = sqlx::query_as::<_, Entity>("SELECT * FROM entities WHERE id = ?")
+    let entity = sqlx::query_as::<_, Entity>(include_str!("entities/get.sql"))
         .bind(id)
         .fetch_optional(pool)
         .await?;
@@ -113,12 +113,10 @@ pub async fn list_by_project(
     project_id: &str,
     limit: i64,
 ) -> Result<Vec<Entity>, AppError> {
-    let entities = sqlx::query_as::<_, Entity>(
-        "SELECT * FROM entities WHERE project_id = ? ORDER BY created_at DESC LIMIT ?",
-    )
-    .bind(project_id)
-    .bind(limit)
-    .fetch_all(pool)
-    .await?;
+    let entities = sqlx::query_as::<_, Entity>(include_str!("entities/list_by_project.sql"))
+        .bind(project_id)
+        .bind(limit)
+        .fetch_all(pool)
+        .await?;
     Ok(entities)
 }
