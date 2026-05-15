@@ -29,7 +29,7 @@ pub fn ProjectDetail(project_id: Uuid) -> Element {
 
 fn projects_view(project_id: Option<Uuid>) -> Element {
     let projects = use_resource(api::fetch_projects);
-    let mut filter = use_signal(|| String::new());
+    let mut filter = use_signal(String::new);
     let mut sort_col = use_signal(|| SortCol::CreatedAt);
     let mut sort_dir = use_signal(|| SortDir::Desc);
 
