@@ -8,7 +8,7 @@ pub async fn connect_and_migrate(database_url: &str) -> Result<SqlitePool, AppEr
         .max_connections(5)
         .after_connect(|conn, _meta| {
             Box::pin(async move {
-                conn.execute("PRAGMA foreign_keys = ON").await?;
+                conn.execute(include_str!("db/foreign_keys.sql")).await?;
                 Ok(())
             })
         })
@@ -27,7 +27,7 @@ pub async fn in_memory_pool() -> Result<SqlitePool, AppError> {
         .max_connections(1)
         .after_connect(|conn, _meta| {
             Box::pin(async move {
-                conn.execute("PRAGMA foreign_keys = ON").await?;
+                conn.execute(include_str!("db/foreign_keys.sql")).await?;
                 Ok(())
             })
         })

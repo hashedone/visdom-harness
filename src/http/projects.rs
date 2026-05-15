@@ -3,6 +3,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
+use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::AppError;
@@ -27,7 +28,7 @@ pub async fn create_project<L: LlmClient>(
         return Err(AppError::EmptyDescription);
     }
 
-    tracing::Span::current().record("name", &body.name);
+    tracing::Span::current().record("name", body.name.as_str());
     tracing::Span::current().record("description_chars", body.description.len());
 
     let mut tx = state.pool.begin().await?;
@@ -45,9 +46,9 @@ pub async fn create_project<L: LlmClient>(
 #[instrument(skip(state), fields(project_id = %id))]
 pub async fn get_project<L: LlmClient>(
     State(state): State<AppState<L>>,
-    Path(id): Path<String>,
+    Path(id): Path<Uuid>,
 ) -> Result<Json<Project>, AppError> {
-    let project = projects::get(&state.pool, &id)
+    let project = projects::get(&state.pool, id)
         .await?
         .ok_or(AppError::NotFound)?;
     Ok(Json(project))

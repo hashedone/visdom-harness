@@ -1,5 +1,6 @@
 use serde_json::json;
 use tempfile::NamedTempFile;
+use uuid::Uuid;
 use visdom_harness::{
     db,
     entities::{self, EntityType},
@@ -23,7 +24,7 @@ async fn entity_create_and_get_each_type() {
 
     let raw = entities::create(
         &pool,
-        &project.id,
+        project.id,
         EntityType::Raw,
         json!({"source": "raw text"}),
         vec![],
@@ -33,7 +34,7 @@ async fn entity_create_and_get_each_type() {
 
     let knowledge = entities::create(
         &pool,
-        &project.id,
+        project.id,
         EntityType::Knowledge,
         json!({"fact": "x"}),
         vec![],
@@ -43,33 +44,33 @@ async fn entity_create_and_get_each_type() {
 
     let summary = entities::create(
         &pool,
-        &project.id,
+        project.id,
         EntityType::Summary,
         json!({"summary": "y"}),
-        vec![raw.id.clone(), knowledge.id.clone()],
+        vec![raw.id, knowledge.id],
     )
     .await
     .unwrap();
 
     // round-trip raw
-    let fetched_raw = entities::get(&pool, &raw.id).await.unwrap().unwrap();
+    let fetched_raw = entities::get(&pool, raw.id).await.unwrap().unwrap();
     assert_eq!(fetched_raw.entity_type, EntityType::Raw);
     assert_eq!(fetched_raw.content, json!({"source": "raw text"}));
     assert!(fetched_raw.contributing_entity_ids.is_empty());
 
     // round-trip knowledge
-    let fetched_knowledge = entities::get(&pool, &knowledge.id).await.unwrap().unwrap();
+    let fetched_knowledge = entities::get(&pool, knowledge.id).await.unwrap().unwrap();
     assert_eq!(fetched_knowledge.entity_type, EntityType::Knowledge);
     assert_eq!(fetched_knowledge.content, json!({"fact": "x"}));
     assert!(fetched_knowledge.contributing_entity_ids.is_empty());
 
     // round-trip summary
-    let fetched_summary = entities::get(&pool, &summary.id).await.unwrap().unwrap();
+    let fetched_summary = entities::get(&pool, summary.id).await.unwrap().unwrap();
     assert_eq!(fetched_summary.entity_type, EntityType::Summary);
     assert_eq!(fetched_summary.content, json!({"summary": "y"}));
     assert_eq!(
         fetched_summary.contributing_entity_ids,
-        vec![raw.id.clone(), knowledge.id.clone()]
+        vec![raw.id, knowledge.id]
     );
 }
 
@@ -80,9 +81,7 @@ async fn entity_get_unknown_returns_none() {
         .await
         .unwrap();
 
-    let result = entities::get(&pool, "00000000-0000-0000-0000-000000000000")
-        .await
-        .unwrap();
+    let result = entities::get(&pool, Uuid::nil()).await.unwrap();
     assert!(result.is_none());
 }
 
@@ -97,7 +96,7 @@ async fn entity_list_by_project_returns_most_recent_first() {
 
     let raw = entities::create(
         &pool,
-        &project.id,
+        project.id,
         EntityType::Raw,
         json!({"source": "raw text"}),
         vec![],
@@ -106,7 +105,7 @@ async fn entity_list_by_project_returns_most_recent_first() {
     .unwrap();
     let knowledge = entities::create(
         &pool,
-        &project.id,
+        project.id,
         EntityType::Knowledge,
         json!({"fact": "x"}),
         vec![],
@@ -115,25 +114,25 @@ async fn entity_list_by_project_returns_most_recent_first() {
     .unwrap();
     let summary = entities::create(
         &pool,
-        &project.id,
+        project.id,
         EntityType::Summary,
         json!({"summary": "y"}),
-        vec![raw.id.clone(), knowledge.id.clone()],
+        vec![raw.id, knowledge.id],
     )
     .await
     .unwrap();
 
-    let list = entities::list_by_project(&pool, &project.id, 10)
+    let list = entities::list_by_project(&pool, project.id, 10)
         .await
         .unwrap();
     // 1 description entity from project creation + 3 explicit entities
     assert_eq!(list.len(), 4);
 
     // all three IDs present regardless of sub-second ordering
-    let ids: Vec<&str> = list.iter().map(|e| e.id.as_str()).collect();
-    assert!(ids.contains(&raw.id.as_str()));
-    assert!(ids.contains(&knowledge.id.as_str()));
-    assert!(ids.contains(&summary.id.as_str()));
+    let ids: Vec<Uuid> = list.iter().map(|e| e.id).collect();
+    assert!(ids.contains(&raw.id));
+    assert!(ids.contains(&knowledge.id));
+    assert!(ids.contains(&summary.id));
 }
 
 #[tokio::test]
@@ -145,7 +144,7 @@ async fn entity_insert_unknown_project_violates_foreign_key() {
 
     let result = entities::create(
         &pool,
-        "00000000-0000-0000-0000-000000000000",
+        Uuid::nil(),
         EntityType::Raw,
         json!({"source": "orphan"}),
         vec![],

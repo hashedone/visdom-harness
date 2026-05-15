@@ -100,7 +100,9 @@ async fn get_project_unknown_id_returns_404() {
     let client = reqwest::Client::new();
 
     let resp = client
-        .get(format!("http://{addr}/projects/unknown-id"))
+        .get(format!(
+            "http://{addr}/projects/00000000-0000-0000-0000-000000000000"
+        ))
         .send()
         .await
         .unwrap();

@@ -1,4 +1,5 @@
 use tempfile::NamedTempFile;
+use uuid::Uuid;
 use visdom_harness::{db, projects};
 
 fn tempfile_db_url(f: &NamedTempFile) -> String {
@@ -16,12 +17,12 @@ async fn project_create_and_get_round_trip() {
         .await
         .unwrap();
 
-    assert!(!created.id.is_empty());
+    assert_ne!(created.id, Uuid::nil());
     assert_eq!(created.name, "test project");
-    assert!(!created.description_entity_id.is_empty());
+    assert_ne!(created.description_entity_id, Uuid::nil());
     assert!(!created.created_at.is_empty());
 
-    let fetched = projects::get(&pool, &created.id).await.unwrap().unwrap();
+    let fetched = projects::get(&pool, created.id).await.unwrap().unwrap();
     assert_eq!(fetched.id, created.id);
     assert_eq!(fetched.name, created.name);
     assert_eq!(fetched.description_entity_id, created.description_entity_id);
@@ -35,9 +36,7 @@ async fn project_get_unknown_returns_none() {
         .await
         .unwrap();
 
-    let result = projects::get(&pool, "00000000-0000-0000-0000-000000000000")
-        .await
-        .unwrap();
+    let result = projects::get(&pool, Uuid::nil()).await.unwrap();
     assert!(result.is_none());
 }
 
@@ -52,10 +51,6 @@ async fn project_exists_true_and_false() {
         .await
         .unwrap();
 
-    assert!(projects::exists(&pool, &created.id).await.unwrap());
-    assert!(
-        !projects::exists(&pool, "00000000-0000-0000-0000-000000000000")
-            .await
-            .unwrap()
-    );
+    assert!(projects::exists(&pool, created.id).await.unwrap());
+    assert!(!projects::exists(&pool, Uuid::nil()).await.unwrap());
 }
