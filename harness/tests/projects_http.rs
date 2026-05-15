@@ -175,6 +175,75 @@ async fn get_entity_returns_200_with_description_entity() {
 }
 
 #[tokio::test]
+async fn list_projects_returns_200_with_array() {
+    let addr = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    client
+        .post(format!("http://{addr}/projects"))
+        .json(&json!({ "name": "Eta", "description": "first" }))
+        .send()
+        .await
+        .unwrap();
+    client
+        .post(format!("http://{addr}/projects"))
+        .json(&json!({ "name": "Theta", "description": "second" }))
+        .send()
+        .await
+        .unwrap();
+
+    let resp = client
+        .get(format!("http://{addr}/projects"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let body: serde_json::Value = resp.json().await.unwrap();
+    assert!(body.is_array());
+    assert_eq!(body.as_array().unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn list_project_entities_returns_200_with_array() {
+    let addr = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    let post_resp = client
+        .post(format!("http://{addr}/projects"))
+        .json(&json!({ "name": "Iota", "description": "entities test" }))
+        .send()
+        .await
+        .unwrap();
+    let project: serde_json::Value = post_resp.json().await.unwrap();
+    let id = project["id"].as_str().unwrap();
+
+    let resp = client
+        .get(format!("http://{addr}/projects/{id}/entities"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let body: serde_json::Value = resp.json().await.unwrap();
+    assert!(body.is_array());
+    assert_eq!(body.as_array().unwrap().len(), 1, "should have one description entity");
+}
+
+#[tokio::test]
+async fn list_project_entities_unknown_project_returns_404() {
+    let addr = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    let resp = client
+        .get(format!(
+            "http://{addr}/projects/00000000-0000-0000-0000-000000000000/entities"
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 404);
+}
+
+#[tokio::test]
 async fn get_entity_unknown_id_returns_404() {
     let addr = spawn_app().await;
     let client = reqwest::Client::new();

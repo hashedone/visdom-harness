@@ -70,3 +70,10 @@ pub async fn exists(pool: &SqlitePool, id: Uuid) -> Result<bool, AppError> {
         .await?;
     Ok(row.is_some())
 }
+
+pub async fn list(pool: &SqlitePool) -> Result<Vec<Project>, AppError> {
+    let projects = sqlx::query_as::<_, Project>(include_str!("projects/list.sql"))
+        .fetch_all(pool)
+        .await?;
+    Ok(projects)
+}

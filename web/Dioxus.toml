@@ -1,0 +1,14 @@
+[application]
+name = "visdom-web"
+default_platform = "web"
+
+[web.app]
+title = "Visdom Debug UI"
+
+[web.watcher]
+reload_html = true
+watch_path = ["src", "assets"]
+
+[web.resource]
+style = []
+script = []
