@@ -28,10 +28,14 @@ pub fn ProjectDetail(project_id: Uuid) -> Element {
 }
 
 fn projects_view(project_id: Option<Uuid>) -> Element {
-    let projects = use_resource(api::fetch_projects);
+    let mut projects = use_resource(api::fetch_projects);
     let mut filter = use_signal(String::new);
     let mut sort_col = use_signal(|| SortCol::CreatedAt);
     let mut sort_dir = use_signal(|| SortDir::Desc);
+    let mut show_form = use_signal(|| false);
+    let mut new_name = use_signal(String::new);
+    let mut new_desc = use_signal(String::new);
+    let mut submit_error: Signal<Option<String>> = use_signal(|| None);
 
     let selected_entities: Resource<Option<Result<Vec<Entity>, ApiError>>> =
         use_resource(move || async move {
@@ -68,6 +72,76 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
                         placeholder: "Filter by name…",
                         value: "{filter}",
                         oninput: move |e| filter.set(e.value()),
+                    }
+                    button {
+                        class: "btn-icon",
+                        title: "New project",
+                        onclick: move |_| {
+                            let cur = *show_form.read();
+                            show_form.set(!cur);
+                        },
+                        if *show_form.read() { "✕" } else { "+" }
+                    }
+                }
+
+                if *show_form.read() {
+                    div { class: "new-project-form",
+                        input {
+                            class: "form-input",
+                            r#type: "text",
+                            placeholder: "Project name",
+                            value: "{new_name}",
+                            oninput: move |e| new_name.set(e.value()),
+                        }
+                        textarea {
+                            class: "form-textarea",
+                            placeholder: "Description",
+                            value: "{new_desc}",
+                            oninput: move |e| new_desc.set(e.value()),
+                        }
+                        if let Some(err) = &*submit_error.read() {
+                            div { class: "form-error", "{err}" }
+                        }
+                        div { class: "form-actions",
+                            button {
+                                class: "btn-primary",
+                                onclick: move |_| {
+                                    let name = new_name.read().trim().to_string();
+                                    let desc = new_desc.read().trim().to_string();
+                                    if name.is_empty() {
+                                        submit_error.set(Some("Name is required.".into()));
+                                        return;
+                                    }
+                                    if desc.is_empty() {
+                                        submit_error.set(Some("Description is required.".into()));
+                                        return;
+                                    }
+                                    submit_error.set(None);
+                                    spawn(async move {
+                                        match api::create_project(&name, &desc).await {
+                                            Ok(_) => {
+                                                new_name.set(String::new());
+                                                new_desc.set(String::new());
+                                                show_form.set(false);
+                                                projects.restart();
+                                            }
+                                            Err(e) => {
+                                                submit_error.set(Some(e.to_string()));
+                                            }
+                                        }
+                                    });
+                                },
+                                "Create"
+                            }
+                            button {
+                                class: "btn-ghost",
+                                onclick: move |_| {
+                                    show_form.set(false);
+                                    submit_error.set(None);
+                                },
+                                "Cancel"
+                            }
+                        }
                     }
                 }
 
