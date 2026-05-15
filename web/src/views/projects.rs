@@ -18,16 +18,129 @@ enum SortDir {
 
 #[allow(non_snake_case)]
 pub fn Projects() -> Element {
-    projects_view(None)
+    rsx! { ProjectsView { selected_id: None } }
 }
 
 #[allow(non_snake_case)]
 #[component]
 pub fn ProjectDetail(project_id: Uuid) -> Element {
-    projects_view(Some(project_id))
+    rsx! { ProjectsView { selected_id: Some(project_id) } }
 }
 
-fn projects_view(project_id: Option<Uuid>) -> Element {
+#[allow(non_snake_case)]
+#[component]
+fn ProjectDetailPane(project_id: Uuid) -> Element {
+    let selected_entities: Resource<Result<Vec<Entity>, ApiError>> =
+        use_resource(move || async move {
+            api::fetch_project_entities(project_id, 0, 50)
+                .await
+                .map(|p| p.items)
+        });
+
+    let selected_project: Resource<Result<Project, ApiError>> =
+        use_resource(move || async move { api::fetch_project(project_id).await });
+
+    let description_entity: Resource<Option<Result<Entity, ApiError>>> =
+        use_resource(move || async move {
+            let project = api::fetch_project(project_id).await.ok()?;
+            Some(api::fetch_entity(project.description_entity_id).await)
+        });
+
+    rsx! {
+        div { class: "detail-pane",
+            button {
+                class: "detail-close",
+                onclick: move |_| { navigator().push(Route::Projects {}); },
+                "✕"
+            }
+
+            match &*selected_project.read() {
+                None => rsx! { div { class: "loading", "Loading project…" } },
+                Some(Err(e)) => rsx! { div { class: "error", "Error: {e}" } },
+                Some(Ok(p)) => rsx! {
+                    div { class: "detail-header",
+                        h2 { class: "detail-title", "{p.name}" }
+                        div { class: "detail-meta",
+                            span { class: "label", "ID" }
+                            span { class: "mono small", "{p.id}" }
+                        }
+                        div { class: "detail-meta",
+                            span { class: "label", "Created" }
+                            span { class: "mono small", "{p.created_at}" }
+                        }
+                        div { class: "detail-meta",
+                            span { class: "label", "Description entity" }
+                            Link {
+                                to: Route::EntityDetail { entity_id: p.description_entity_id },
+                                class: "entity-link mono small",
+                                "{p.description_entity_id}"
+                            }
+                        }
+
+                        div { class: "detail-section",
+                            h3 { class: "section-title", "Description" }
+                            match &*description_entity.read() {
+                                None | Some(None) => rsx! { div { class: "loading", "Loading…" } },
+                                Some(Some(Err(e))) => rsx! { div { class: "error", "Error: {e}" } },
+                                Some(Some(Ok(desc))) => {
+                                    let preview = desc.content
+                                        .get("text")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or_default()
+                                        .to_string();
+                                    rsx! {
+                                        div { class: "prose-block", "{preview}" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    div { class: "detail-section",
+                        h3 { class: "section-title", "Entities" }
+                        match &*selected_entities.read() {
+                            None => rsx! { div { class: "loading", "Loading…" } },
+                            Some(Err(e)) => rsx! { div { class: "error", "Error: {e}" } },
+                            Some(Ok(entities)) => rsx! {
+                                table { class: "data-table data-table--compact",
+                                    thead {
+                                        tr {
+                                            th { "Type" }
+                                            th { "ID" }
+                                            th { "Created" }
+                                        }
+                                    }
+                                    tbody {
+                                        for e in entities {
+                                            {
+                                                let eid = e.id;
+                                                rsx! {
+                                                    tr {
+                                                        class: "row",
+                                                        onclick: move |_| {
+                                                            navigator().push(Route::EntityDetail { entity_id: eid });
+                                                        },
+                                                        td { span { class: "badge", "{e.entity_type}" } }
+                                                        td { class: "mono small", "{e.id}" }
+                                                        td { class: "mono small", "{e.created_at}" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[allow(non_snake_case)]
+#[component]
+fn ProjectsView(selected_id: Option<Uuid>) -> Element {
     let mut projects = use_resource(api::fetch_projects);
     let mut filter = use_signal(String::new);
     let mut sort_col = use_signal(|| SortCol::CreatedAt);
@@ -37,33 +150,11 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
     let mut new_desc = use_signal(String::new);
     let mut submit_error: Signal<Option<String>> = use_signal(|| None);
 
-    let selected_entities: Resource<Option<Result<Vec<Entity>, ApiError>>> =
-        use_resource(move || async move {
-            let id = project_id?;
-            Some(
-                api::fetch_project_entities(id, 0, 50)
-                    .await
-                    .map(|p| p.items),
-            )
-        });
-
-    let selected_project: Resource<Option<Result<Project, ApiError>>> =
-        use_resource(move || async move {
-            let id = project_id?;
-            Some(api::fetch_project(id).await)
-        });
-
-    let description_entity: Resource<Option<Result<Entity, ApiError>>> =
-        use_resource(move || async move {
-            let id = project_id?;
-            // fetch project first to get description_entity_id, then fetch that entity
-            let project = api::fetch_project(id).await.ok()?;
-            Some(api::fetch_entity(project.description_entity_id).await)
-        });
+    let has_detail = selected_id.is_some();
 
     rsx! {
         div { class: "split-view",
-            div { class: if project_id.is_some() { "list-pane list-pane--narrow" } else { "list-pane" },
+            div { class: if has_detail { "list-pane list-pane--narrow" } else { "list-pane" },
                 div { class: "pane-toolbar",
                     h2 { class: "pane-title", "Projects" }
                     input {
@@ -205,7 +296,7 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
                                     tbody {
                                         for p in items {
                                             {
-                                                let is_selected = project_id == Some(p.id);
+                                                let is_selected = selected_id == Some(p.id);
                                                 let pid = p.id;
                                                 rsx! {
                                                     tr {
@@ -227,96 +318,8 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
                 }
             }
 
-            if let Some(_id) = project_id {
-                div { class: "detail-pane",
-                    button {
-                        class: "detail-close",
-                        onclick: move |_| { navigator().push(Route::Projects {}); },
-                        "✕"
-                    }
-
-                    match &*selected_project.read() {
-                        None => rsx! { div { class: "loading", "Loading project…" } },
-                        Some(None) => rsx! { div { class: "loading", "Loading…" } },
-                        Some(Some(Err(e))) => rsx! { div { class: "error", "Error: {e}" } },
-                        Some(Some(Ok(p))) => rsx! {
-                            div { class: "detail-header",
-                                h2 { class: "detail-title", "{p.name}" }
-                                div { class: "detail-meta",
-                                    span { class: "label", "ID" }
-                                    span { class: "mono small", "{p.id}" }
-                                }
-                                div { class: "detail-meta",
-                                    span { class: "label", "Created" }
-                                    span { class: "mono small", "{p.created_at}" }
-                                }
-                                div { class: "detail-meta",
-                                    span { class: "label", "Description entity" }
-                                    Link {
-                                        to: Route::EntityDetail { entity_id: p.description_entity_id },
-                                        class: "entity-link mono small",
-                                        "{p.description_entity_id}"
-                                    }
-                                }
-
-                                div { class: "detail-section",
-                                    h3 { class: "section-title", "Description" }
-                                    match &*description_entity.read() {
-                                        None | Some(None) => rsx! { div { class: "loading", "Loading…" } },
-                                        Some(Some(Err(e))) => rsx! { div { class: "error", "Error: {e}" } },
-                                        Some(Some(Ok(desc))) => {
-                                            let preview = desc.content
-                                                .get("text")
-                                                .and_then(|v| v.as_str())
-                                                .unwrap_or_default()
-                                                .to_string();
-                                            rsx! {
-                                                div { class: "prose-block", "{preview}" }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            div { class: "detail-section",
-                                h3 { class: "section-title", "Entities" }
-                                match &*selected_entities.read() {
-                                    None | Some(None) => rsx! { div { class: "loading", "Loading…" } },
-                                    Some(Some(Err(e))) => rsx! { div { class: "error", "Error: {e}" } },
-                                    Some(Some(Ok(entities))) => rsx! {
-                                        table { class: "data-table data-table--compact",
-                                            thead {
-                                                tr {
-                                                    th { "Type" }
-                                                    th { "ID" }
-                                                    th { "Created" }
-                                                }
-                                            }
-                                            tbody {
-                                                for e in entities {
-                                                    {
-                                                        let eid = e.id;
-                                                        rsx! {
-                                                            tr {
-                                                                class: "row",
-                                                                onclick: move |_| {
-                                                                    navigator().push(Route::EntityDetail { entity_id: eid });
-                                                                },
-                                                                td { class: "badge", "{e.entity_type}" }
-                                                                td { class: "mono small", "{e.id}" }
-                                                                td { class: "mono small", "{e.created_at}" }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            if let Some(pid) = selected_id {
+                ProjectDetailPane { key: "{pid}", project_id: pid }
             }
         }
     }
