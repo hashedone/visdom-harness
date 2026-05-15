@@ -36,7 +36,11 @@ fn projects_view(project_id: Option<Uuid>) -> Element {
     let selected_entities: Resource<Option<Result<Vec<Entity>, ApiError>>> =
         use_resource(move || async move {
             let id = project_id?;
-            Some(api::fetch_project_entities(id, 0, 50).await.map(|p| p.items))
+            Some(
+                api::fetch_project_entities(id, 0, 50)
+                    .await
+                    .map(|p| p.items),
+            )
         });
 
     let selected_project: Resource<Option<Result<Project, ApiError>>> =

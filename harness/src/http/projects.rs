@@ -73,6 +73,7 @@ pub async fn list_project_entities<L: LlmClient>(
     if !projects::exists(&state.pool, id).await? {
         return Err(AppError::NotFound);
     }
-    let page = entities::list_by_project(&state.pool, id, pagination.limit, pagination.offset).await?;
+    let page =
+        entities::list_by_project(&state.pool, id, pagination.limit, pagination.offset).await?;
     Ok(Json(page))
 }

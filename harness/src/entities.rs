@@ -125,7 +125,12 @@ pub async fn list(pool: &SqlitePool, limit: i64, offset: i64) -> Result<Page<Ent
         .bind(offset)
         .fetch_all(pool)
         .await?;
-    Ok(Page { items, total, limit, offset })
+    Ok(Page {
+        items,
+        total,
+        limit,
+        offset,
+    })
 }
 
 pub async fn list_by_project(
@@ -144,5 +149,10 @@ pub async fn list_by_project(
         .bind(offset)
         .fetch_all(pool)
         .await?;
-    Ok(Page { items, total, limit, offset })
+    Ok(Page {
+        items,
+        total,
+        limit,
+        offset,
+    })
 }
