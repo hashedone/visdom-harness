@@ -82,10 +82,10 @@ fn entities_view(selected_id: Option<Uuid>) -> Element {
 
                             match (*sort_col.read(), *sort_dir.read()) {
                                 (SortCol::EntityType, SortDir::Asc) => {
-                                    items.sort_by(|a, b| a.entity_type.to_string().cmp(&b.entity_type.to_string()))
+                                    items.sort_by_key(|e| e.entity_type.to_string())
                                 }
                                 (SortCol::EntityType, SortDir::Desc) => {
-                                    items.sort_by(|a, b| b.entity_type.to_string().cmp(&a.entity_type.to_string()))
+                                    items.sort_by_key(|e| std::cmp::Reverse(e.entity_type.to_string()))
                                 }
                                 (SortCol::CreatedAt, SortDir::Asc) => {
                                     items.sort_by(|a, b| a.created_at.cmp(&b.created_at))
