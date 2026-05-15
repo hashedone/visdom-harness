@@ -144,3 +144,43 @@ async fn create_project_empty_description_returns_400() {
         "error should mention 'description'"
     );
 }
+
+#[tokio::test]
+async fn get_entity_returns_200_with_description_entity() {
+    let addr = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    let post_resp = client
+        .post(format!("http://{addr}/projects"))
+        .json(&json!({ "name": "Delta", "description": "entity fetch test" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(post_resp.status(), 201);
+    let project: serde_json::Value = post_resp.json().await.unwrap();
+    let entity_id = project["description_entity_id"].as_str().unwrap();
+
+    let resp = client
+        .get(format!("http://{addr}/entities/{entity_id}"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 200);
+    let entity: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(entity["id"], entity_id);
+    assert_eq!(entity["entity_type"], "raw");
+    assert!(!entity["content"].is_null());
+}
+
+#[tokio::test]
+async fn get_entity_unknown_id_returns_404() {
+    let addr = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    let resp = client
+        .get(format!("http://{addr}/entities/00000000-0000-0000-0000-000000000000"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), 404);
+}

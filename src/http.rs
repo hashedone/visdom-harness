@@ -1,4 +1,5 @@
 pub mod debug;
+pub mod entities;
 pub mod health;
 pub mod projects;
 
@@ -16,5 +17,6 @@ pub fn router<L: LlmClient>(state: AppState<L>) -> Router {
         .route("/debug/inferences/:id", get(debug::get_inference::<L>))
         .route("/projects", post(projects::create_project::<L>))
         .route("/projects/:id", get(projects::get_project::<L>))
+        .route("/entities/:id", get(entities::get_entity::<L>))
         .with_state(state)
 }
