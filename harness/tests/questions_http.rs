@@ -127,13 +127,9 @@ async fn answer_empty_text_returns_400() {
     // First, create a project, then seed a question via the repo helper.
     let pool = db::in_memory_pool().await.unwrap();
     let mut tx = pool.begin().await.unwrap();
-    let proj = visdom_harness::projects::create_in_tx(
-        &mut tx,
-        "Proj",
-        "desc",
-    )
-    .await
-    .unwrap();
+    let proj = visdom_harness::projects::create_in_tx(&mut tx, "Proj", "desc")
+        .await
+        .unwrap();
     tx.commit().await.unwrap();
 
     let q = visdom_harness::questions::create(

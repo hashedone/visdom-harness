@@ -1,8 +1,8 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-use crate::error::AppError;
 use crate::entities::{self, EntityType, Page};
+use crate::error::AppError;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct Question {
@@ -56,21 +56,18 @@ pub async fn list(
 ) -> Result<Page<Question>, AppError> {
     let (total, items) = match status_filter {
         Some(status) => {
-            let total: i64 =
-                sqlx::query_scalar(include_str!("questions/count_by_status.sql"))
-                    .bind(project_id)
-                    .bind(status)
-                    .fetch_one(pool)
-                    .await?;
-            let items = sqlx::query_as::<_, Question>(include_str!(
-                "questions/list_by_status.sql"
-            ))
-            .bind(project_id)
-            .bind(status)
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(pool)
-            .await?;
+            let total: i64 = sqlx::query_scalar(include_str!("questions/count_by_status.sql"))
+                .bind(project_id)
+                .bind(status)
+                .fetch_one(pool)
+                .await?;
+            let items = sqlx::query_as::<_, Question>(include_str!("questions/list_by_status.sql"))
+                .bind(project_id)
+                .bind(status)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(pool)
+                .await?;
             (total, items)
         }
         None => {
