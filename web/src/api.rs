@@ -64,7 +64,12 @@ pub struct Entity {
     pub created_at: String,
 }
 
-const BASE_URL: &str = "http://127.0.0.1:3000";
+/// Harness API base URL. Override at build time:
+///   VISDOM_API_URL=http://127.0.0.1:3001 dx serve
+const BASE_URL: &str = match option_env!("VISDOM_API_URL") {
+    Some(url) => url,
+    None => "http://127.0.0.1:3001",
+};
 
 pub async fn create_project(name: &str, description: &str) -> Result<Project, ApiError> {
     #[derive(Serialize)]

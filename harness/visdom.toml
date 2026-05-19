@@ -2,7 +2,7 @@
 # All values here are defaults; set the corresponding env var to override.
 # Secrets (ANTHROPIC_API_KEY) are never placed in this file — use .env or the environment.
 
-bind_addr    = "127.0.0.1:3000"
+bind_addr    = "127.0.0.1:3001"
 database_url = "sqlite://visdom.db?mode=rwc"
 log_filter   = "info,visdom_harness=debug"
 

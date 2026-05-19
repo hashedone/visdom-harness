@@ -43,7 +43,7 @@ impl Config {
         let bind_addr = env::var("BIND_ADDR")
             .ok()
             .or(file.bind_addr)
-            .unwrap_or_else(|| "127.0.0.1:3000".to_string());
+            .unwrap_or_else(|| "127.0.0.1:3001".to_string());
 
         let database_url = env::var("DATABASE_URL")
             .ok()
