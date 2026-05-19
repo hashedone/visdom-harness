@@ -56,22 +56,23 @@ async fn entity_create_and_get_each_type() {
     let fetched_raw = entities::get(&pool, raw.id).await.unwrap().unwrap();
     assert_eq!(fetched_raw.entity_type, EntityType::Raw);
     assert_eq!(fetched_raw.content, json!({"source": "raw text"}));
-    assert!(fetched_raw.contributing_entity_ids.is_empty());
+    assert!(fetched_raw.references.is_empty());
 
     // round-trip knowledge
     let fetched_knowledge = entities::get(&pool, knowledge.id).await.unwrap().unwrap();
     assert_eq!(fetched_knowledge.entity_type, EntityType::Knowledge);
     assert_eq!(fetched_knowledge.content, json!({"fact": "x"}));
-    assert!(fetched_knowledge.contributing_entity_ids.is_empty());
+    assert!(fetched_knowledge.references.is_empty());
 
     // round-trip summary
     let fetched_summary = entities::get(&pool, summary.id).await.unwrap().unwrap();
     assert_eq!(fetched_summary.entity_type, EntityType::Summary);
     assert_eq!(fetched_summary.content, json!({"summary": "y"}));
-    assert_eq!(
-        fetched_summary.contributing_entity_ids,
-        vec![raw.id, knowledge.id]
-    );
+    let mut got_refs = fetched_summary.references.clone();
+    let mut expected_refs = vec![raw.id, knowledge.id];
+    got_refs.sort();
+    expected_refs.sort();
+    assert_eq!(got_refs, expected_refs);
 }
 
 #[tokio::test]

@@ -36,8 +36,8 @@ pub async fn create_in_tx(
         .await?;
 
     // Step 2: create description entity (project row now exists, FK satisfied)
-    let entity = entities::create(
-        &mut **tx,
+    let entity = entities::create_in_tx(
+        tx,
         project_id,
         EntityType::Raw,
         serde_json::json!({ "text": description }),
