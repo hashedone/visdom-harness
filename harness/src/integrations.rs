@@ -1,9 +1,9 @@
 use std::time::Duration;
 
+use axum::extract::State;
 use axum::extract::WebSocketUpgrade;
 use axum::extract::ws::{Message, WebSocket};
 use axum::response::IntoResponse;
-use axum::extract::State;
 use tokio::sync::mpsc;
 use tokio::time;
 use tracing::{debug, info, warn};
@@ -36,10 +36,7 @@ async fn handle_socket<L: LlmClient>(socket: WebSocket, state: AppState<L>) {
             .lock()
             .expect("registry lock poisoned");
         guard.push(tx);
-        info!(
-            connections = guard.len(),
-            "integration connected"
-        );
+        info!(connections = guard.len(), "integration connected");
     }
 
     drive_connection(socket, rx, state).await;

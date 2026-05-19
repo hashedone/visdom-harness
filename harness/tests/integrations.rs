@@ -54,7 +54,11 @@ async fn connect_upgrades_to_websocket() {
     let url = format!("{base}/integrations/connect");
 
     let result = connect_async(&url).await;
-    assert!(result.is_ok(), "WebSocket upgrade failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "WebSocket upgrade failed: {:?}",
+        result.err()
+    );
 }
 
 /// The connection stays open after upgrade — no immediate close frame.
