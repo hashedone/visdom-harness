@@ -101,11 +101,10 @@ impl EntityRow {
 
 /// Load the reference UUIDs for a single entity.
 async fn load_references(pool: &SqlitePool, entity_id: Uuid) -> Result<Vec<Uuid>, AppError> {
-    let rows: Vec<(Uuid,)> =
-        sqlx::query_as(include_str!("entities/get_references.sql"))
-            .bind(entity_id)
-            .fetch_all(pool)
-            .await?;
+    let rows: Vec<(Uuid,)> = sqlx::query_as(include_str!("entities/get_references.sql"))
+        .bind(entity_id)
+        .fetch_all(pool)
+        .await?;
     Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 

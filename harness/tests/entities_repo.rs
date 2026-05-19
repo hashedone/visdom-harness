@@ -68,10 +68,7 @@ async fn entity_create_and_get_each_type() {
     let fetched_summary = entities::get(&pool, summary.id).await.unwrap().unwrap();
     assert_eq!(fetched_summary.entity_type, EntityType::Summary);
     assert_eq!(fetched_summary.content, json!({"summary": "y"}));
-    assert_eq!(
-        fetched_summary.references,
-        vec![raw.id, knowledge.id]
-    );
+    assert_eq!(fetched_summary.references, vec![raw.id, knowledge.id]);
 }
 
 #[tokio::test]
