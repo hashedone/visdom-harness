@@ -7,6 +7,7 @@ use axum::Router;
 use axum::routing::{get, post};
 
 use crate::AppState;
+use crate::integrations;
 use crate::llm::LlmClient;
 
 pub fn router<L: LlmClient>(state: AppState<L>) -> Router {
@@ -26,5 +27,6 @@ pub fn router<L: LlmClient>(state: AppState<L>) -> Router {
         )
         .route("/entities", get(entities::list_entities::<L>))
         .route("/entities/:id", get(entities::get_entity::<L>))
+        .route("/integrations/connect", get(integrations::connect::<L>))
         .with_state(state)
 }

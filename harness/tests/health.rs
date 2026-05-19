@@ -25,6 +25,7 @@ async fn spawn_app() -> SocketAddr {
     let state = AppState {
         pool,
         llm: NoopLlmClient,
+        integrations: visdom_harness::IntegrationRegistry::new(),
     };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();

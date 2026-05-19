@@ -8,7 +8,7 @@ use visdom_harness::{AppState, db};
 async fn spawn_live_app(model: &str) -> SocketAddr {
     let pool = db::in_memory_pool().await.unwrap();
     let llm = AnthropicLlmClient::from_env(model).expect("ANTHROPIC_API_KEY must be set");
-    let state = AppState { pool, llm };
+    let state = AppState { pool, llm, integrations: visdom_harness::IntegrationRegistry::new() };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let app = visdom_harness::build_app(state);

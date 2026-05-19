@@ -23,7 +23,11 @@ async fn main() -> Result<()> {
     let llm =
         AnthropicLlmClient::from_env(&cfg.anthropic_model).map_err(|e| eyre::eyre!("{}", e))?;
 
-    let state = AppState { pool, llm };
+    let state = AppState {
+        pool,
+        llm,
+        integrations: visdom_harness::IntegrationRegistry::new(),
+    };
     let app = visdom_harness::build_app(state);
 
     let listener = tokio::net::TcpListener::bind(&cfg.bind_addr).await?;
