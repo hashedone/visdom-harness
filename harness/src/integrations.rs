@@ -94,7 +94,7 @@ async fn drive_connection<L: LlmClient>(
 
             // Heartbeat: send a ping to keep the connection alive.
             _ = heartbeat.tick() => {
-                if socket.send(Message::Ping(vec![].into())).await.is_err() {
+                if socket.send(Message::Ping(vec![])).await.is_err() {
                     debug!("integration heartbeat failed — connection closed");
                     break;
                 }
