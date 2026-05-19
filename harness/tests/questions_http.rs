@@ -52,7 +52,7 @@ async fn create_project(client: &reqwest::Client, addr: SocketAddr) -> Value {
 
 #[tokio::test]
 async fn list_questions_empty_for_new_project() {
-    let _addr = spawn_app().await;
+    let addr = spawn_app().await;
     let client = reqwest::Client::new();
     let project = create_project(&client, addr).await;
     let project_id = project["id"].as_str().unwrap();
@@ -71,7 +71,7 @@ async fn list_questions_empty_for_new_project() {
 
 #[tokio::test]
 async fn list_questions_unknown_project_returns_404() {
-    let _addr = spawn_app().await;
+    let addr = spawn_app().await;
     let client = reqwest::Client::new();
     let fake_id = uuid::Uuid::new_v4();
 
@@ -86,7 +86,7 @@ async fn list_questions_unknown_project_returns_404() {
 
 #[tokio::test]
 async fn get_question_unknown_returns_404() {
-    let _addr = spawn_app().await;
+    let addr = spawn_app().await;
     let client = reqwest::Client::new();
     let fake_id = uuid::Uuid::new_v4();
 
@@ -101,7 +101,7 @@ async fn get_question_unknown_returns_404() {
 
 #[tokio::test]
 async fn answer_unknown_question_returns_404() {
-    let _addr = spawn_app().await;
+    let addr = spawn_app().await;
     let client = reqwest::Client::new();
     let fake_id = uuid::Uuid::new_v4();
 
@@ -164,7 +164,7 @@ async fn answer_empty_text_returns_400() {
 
 #[tokio::test]
 async fn answer_question_creates_answer_and_marks_answered() {
-    let _addr = spawn_app().await;
+    let addr = spawn_app().await;
     let client = reqwest::Client::new();
     let project = create_project(&client, addr).await;
     let project_id = project["id"].as_str().unwrap();
