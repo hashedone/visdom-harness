@@ -66,6 +66,26 @@ pub struct Entity {
 
 const BASE_URL: &str = "http://127.0.0.1:3000";
 
+pub async fn create_project(name: &str, description: &str) -> Result<Project, ApiError> {
+    #[derive(Serialize)]
+    struct Body<'a> {
+        name: &'a str,
+        description: &'a str,
+    }
+    let resp = gloo_net::http::Request::post(&format!("{BASE_URL}/projects"))
+        .json(&Body { name, description })
+        .map_err(|e| ApiError::Network(e.to_string()))?
+        .send()
+        .await
+        .map_err(|e| ApiError::Network(e.to_string()))?;
+    if !resp.ok() {
+        return Err(ApiError::HttpError(resp.status()));
+    }
+    resp.json::<Project>()
+        .await
+        .map_err(|e| ApiError::Deserialize(e.to_string()))
+}
+
 pub async fn fetch_projects() -> Result<Vec<Project>, ApiError> {
     let resp = gloo_net::http::Request::get(&format!("{BASE_URL}/projects"))
         .send()

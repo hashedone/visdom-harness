@@ -411,6 +411,96 @@ body {
   gap: 4px;
 }
 
+/* ---- Buttons ---- */
+.btn-icon {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+}
+.btn-icon:hover { background: var(--surface2); color: var(--text); }
+
+.btn-primary {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-ghost {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+/* ---- New project form ---- */
+.new-project-form {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface);
+}
+
+.form-input,
+.form-textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.form-input:focus,
+.form-textarea:focus { border-color: var(--accent); }
+.form-input::placeholder,
+.form-textarea::placeholder { color: var(--text-muted); }
+
+.form-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.form-error {
+  font-size: 12px;
+  color: var(--danger);
+  background: rgba(240,62,62,0.1);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+}
+
 /* ---- Utility ---- */
 .mono { font-family: var(--font-mono); }
 .small { font-size: 12px; color: var(--text-muted); }
