@@ -93,10 +93,12 @@ pub async fn list(
     })
 }
 
-/// Record an answer to a question:
-/// 1. Store the answer text (+ question for context) as a raw entity.
-/// 2. Link it in the answers table.
-/// 3. Mark the question as answered.
+/// Record an answer to a question.
+///
+/// 1. Stores the answer text (+ question for context) as a raw entity.
+/// 2. Links it in the answers table.
+/// 3. Marks the question as answered.
+///
 /// Returns the created Answer record.
 pub async fn answer(
     pool: &SqlitePool,
