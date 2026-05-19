@@ -6,6 +6,7 @@ pub mod inferences;
 pub mod integrations;
 pub mod llm;
 pub mod projects;
+pub mod questions;
 pub mod telemetry;
 
 use std::sync::{Arc, Mutex};
