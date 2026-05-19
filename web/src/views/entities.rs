@@ -67,11 +67,11 @@ fn EntityDetailPane(entity_id: Uuid) -> Element {
                             span { class: "label", "Created" }
                             span { class: "mono small", "{e.created_at}" }
                         }
-                        if !e.contributing_entity_ids.is_empty() {
+                        if !e.references.is_empty() {
                             div { class: "detail-section",
-                                h3 { class: "section-title", "Contributing entities" }
+                                h3 { class: "section-title", "Referenced entities" }
                                 ul { class: "id-list",
-                                    for cid in &e.contributing_entity_ids {
+                                    for cid in &e.references {
                                         {
                                             let cid = *cid;
                                             rsx! {

@@ -60,7 +60,7 @@ pub struct Entity {
     pub project_id: Uuid,
     pub entity_type: EntityType,
     pub content: serde_json::Value,
-    pub contributing_entity_ids: Vec<Uuid>,
+    pub references: Vec<Uuid>,
     pub created_at: String,
 }
 
